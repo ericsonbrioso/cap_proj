@@ -36,7 +36,7 @@ class RentResource extends Resource
         return $form
             ->schema([
                 Wizard::make([
-                    Wizard\Step::make('Client Details')
+                    Wizard\Step::make('Rent Details')
                         ->schema([
                             
                             Forms\Components\TextInput::make('rent_number')
@@ -48,20 +48,29 @@ class RentResource extends Resource
                             Forms\Components\Hidden::make('user_id')
                                 ->default(auth()->check() ? auth()->user()->id : null)
                                 ->required(),
-                            Forms\Components\TextInput::make('client_name')
-                                ->label('Name of Client')
-                                ->default(auth()->check() ? auth()->user()->name : null)
-                                ->disabled()
-                                ->dehydrated(),
                             Forms\Components\TextInput::make('address')
                                 ->label('Complete Address')
                                 ->required()
                                 ->maxLength(255),
+                            Forms\Components\DateTimePicker ::make('date_of_delivery')
+                                ->suffixIcon('heroicon-m-calendar-days')
+                                ->prefix('Starts')  
+                                ->required()
+                                ->seconds(false)
+                                ->native(false)
+                                ->minDate(now()),
                             Forms\Components\TextInput::make('contact')
                                 ->label('Contact Number')
                                 ->type('number')
                                 ->required()
                                 ->maxValue(11),
+                            Forms\Components\DateTimePicker::make('date_of_pickup')
+                                ->suffixIcon('heroicon-m-calendar-days') 
+                                ->prefix('Ends')  
+                                ->required()
+                                ->seconds(false)
+                                ->native(false)
+                                ->minDate(now()),
                             
                                
                         ])->columns(2),
@@ -100,24 +109,6 @@ class RentResource extends Resource
                                 ])->columns(4)
                             
                         ])->columnSpanFull(),
-                    Wizard\Step::make('Delivery Details')
-                        ->schema([
-
-                            Forms\Components\DateTimePicker ::make('date_of_delivery')
-                                ->suffixIcon('heroicon-m-calendar-days')
-                                ->prefix('Starts')  
-                                ->required()
-                                ->seconds(false)
-                                ->native(false)
-                                ->minDate(now()),
-                            Forms\Components\DateTimePicker::make('date_of_pickup')
-                                ->suffixIcon('heroicon-m-calendar-days') 
-                                ->prefix('Ends')  
-                                ->required()
-                                ->seconds(false)
-                                ->native(false)
-                                ->minDate(now()),
-                        ])->columns(2),
                 ])->columnSpanFull()
             ]);
     }
@@ -129,6 +120,7 @@ class RentResource extends Resource
                 Tables\Columns\TextColumn::make('rent_number')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('user.name')
+                    ->label('Clents Name')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('date_of_delivery')
                     ->searchable(),

@@ -1,0 +1,1 @@
+<img src="{{asset('images/jad.png')}}" alt="JAD MARKETING" height="110px" width="110px">

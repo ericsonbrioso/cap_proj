@@ -90,20 +90,22 @@ class PackageResource extends Resource
                 'xl' => 3,
             ])
             ->columns([
-                Split::make([
-                    ImageColumn::make('image')
-                        ->circular(),
-                    TextColumn::make('name')
-                        ->weight(FontWeight::Bold)
-                        ->searchable()
-                        ->sortable(),
-                    IconColumn::make('status')->boolean()
-                        ->label('status'),
-                    TextColumn::make('price')
-                        ->prefix('₱')
-                        ->sortable(),
 
-                ]),
+                    Split::make([
+                        ImageColumn::make('image')
+                            ->circular()
+                            ->size(100),
+                        TextColumn::make('name')
+                            ->weight(FontWeight::Bold)
+                            ->searchable()
+                            ->sortable(),
+                        IconColumn::make('status')->boolean()
+                            ->label('status'),
+                        TextColumn::make('price')
+                            ->prefix('₱')
+                            ->sortable(),
+                    ]), 
+                
             ])
             ->filters([
                 //
@@ -113,7 +115,7 @@ class PackageResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                  
                 ]),
             ])
             ->emptyStateActions([

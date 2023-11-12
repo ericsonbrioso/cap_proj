@@ -128,7 +128,6 @@ class EquipmentResource extends Resource
                         ->prefix('₱')
                          ->sortable(),
                     TextColumn::make('quantity')
-                        ->icon('heroicon-m-truck')
                         ->numeric()
                         ->sortable(),
                     TextColumn::make('condition')
@@ -140,7 +139,6 @@ class EquipmentResource extends Resource
                             'poor' => 'danger',
                             }),
                     TextColumn::make('type.name')
-                        ->icon('heroicon-m-tag')
                         ->label('Equipment Type')
                         ->searchable(),
                      TextColumn::make('created_at')
