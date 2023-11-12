@@ -34,4 +34,8 @@ class Rent extends Model
         return $this->hasMany(RentItem::class);
     }
 
+    public function packageitems()
+    {
+        return $this->hasMany(RentPackage::class);
+    }
 }

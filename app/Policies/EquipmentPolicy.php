@@ -13,7 +13,7 @@ class EquipmentPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->isAdmin();
+        return $user->isAdmin()  || $user->isUser();
     }
 
     /**
@@ -21,7 +21,7 @@ class EquipmentPolicy
      */
     public function view(User $user, Equipment $equipment): bool
     {
-        return $user->isAdmin();
+        return $user->isAdmin()  || $user->isUser();
     }
 
     /**

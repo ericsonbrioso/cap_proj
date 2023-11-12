@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\RentResource\Pages;
-use App\Filament\Resources\RentResource\RelationManagers;
 use App\Models\Rent;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -15,6 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Forms\Components\Wizard;
 use Filament\Forms\Components\Select;
 use App\Models\Equipment;
+use App\Models\Package;
 use App\Models\User;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\TextInput;
@@ -36,7 +36,7 @@ class RentResource extends Resource
         return $form
             ->schema([
                 Wizard::make([
-                    Wizard\Step::make('Rent Details')
+                    Wizard\Step::make('Client Details')
                         ->schema([
                             
                             Forms\Components\TextInput::make('rent_number')
@@ -54,11 +54,11 @@ class RentResource extends Resource
                                 ->maxLength(255),
                             Forms\Components\DateTimePicker ::make('date_of_delivery')
                                 ->suffixIcon('heroicon-m-calendar-days')
-                                ->prefix('Starts')  
+                                ->prefix('Start')  
                                 ->required()
                                 ->seconds(false)
                                 ->native(false)
-                                ->minDate(now()),
+                                ->minDate(now()->subHours(14)),
                             Forms\Components\TextInput::make('contact')
                                 ->label('Contact Number')
                                 ->type('number')
@@ -66,7 +66,7 @@ class RentResource extends Resource
                                 ->maxValue(11),
                             Forms\Components\DateTimePicker::make('date_of_pickup')
                                 ->suffixIcon('heroicon-m-calendar-days') 
-                                ->prefix('Ends')  
+                                ->prefix('End')  
                                 ->required()
                                 ->seconds(false)
                                 ->native(false)
@@ -74,41 +74,72 @@ class RentResource extends Resource
                             
                                
                         ])->columns(2),
-                    Wizard\Step::make('Rent Equipments')
-                        ->schema([
-
-                            Forms\Components\Repeater::make('items')
-                                ->relationship()
-                                ->schema([  
-
-                                    Forms\Components\Select::make('equipment_id')
-                                        ->label('Equipment')
-                                        ->options(Equipment::query()->pluck('name','id'))
-                                        ->reactive()
-                                        ->afterStateUpdated(fn ($state, Forms\Set $set)=>
-                                            $set('unit_price', Equipment::find($state)?->price ?? 0))
-                                        ->searchable()
-                                        ->required(),
-                                    Forms\Components\TextInput::make('quantity')
-                                        ->label('Quantity')
-                                        ->default(1)
-                                        ->live()
-                                        ->dehydrated()
-                                        ->required()
-                                        ->numeric(),
-                                    Forms\Components\TextInput::make('unit_price')
-                                        ->label('Unit Price')
-                                        ->numeric()
-                                        ->disabled()
-                                        ->dehydrated()
-                                        ->required(),
-                                    Forms\Components\Placeholder::make('total_price')
-                                        ->label('Total Price')
-                                        ->content(function ($get) {
-                                            return $get('quantity') * $get('unit_price');}),      
-                                ])->columns(4)
-                            
-                        ])->columnSpanFull(),
+                    Wizard\Step::make('Rent Package')
+                            ->schema([
+    
+                                Forms\Components\Repeater::make('packageitems')
+                                    ->relationship()
+                                    ->schema([  
+    
+                                        Forms\Components\Select::make('package_id')
+                                            ->label('Package')
+                                            ->options(Package::query()->pluck('name','id'))
+                                            ->reactive()
+                                            ->afterStateUpdated(fn ($state, Forms\Set $set)=>
+                                                $set('unit_price', Package::find($state)?->price ?? 0))
+                                            ->searchable()
+                                            ->nullable(),
+                                        Forms\Components\TextInput::make('quantity')
+                                            ->label('Quantity') 
+                                            ->default(1)
+                                            ->live()
+                                            ->dehydrated()
+                                            ->numeric(),
+                                        Forms\Components\TextInput::make('unit_price')
+                                            ->label('Unit Price')
+                                            ->numeric()
+                                            ->disabled()
+                                            ->dehydrated(),
+                                        Forms\Components\Placeholder::make('total_price')
+                                            ->label('Total Price')
+                                            ->content(function ($get) {
+                                                return $get('quantity') * $get('unit_price');}),      
+                                    ])->columns(4),
+                                ]),
+                            Wizard\Step::make('Custom Package')
+                                ->schema([
+        
+                                    Forms\Components\Repeater::make('items')
+                                        ->relationship()
+                                        ->schema([  
+        
+                                            Forms\Components\Select::make('equipment_id')
+                                                ->label('Equipment')
+                                                ->options(Equipment::query()->pluck('name','id'))
+                                                ->reactive()
+                                                ->afterStateUpdated(fn ($state, Forms\Set $set)=>
+                                                    $set('unit_price', Equipment::find($state)?->price ?? 0))
+                                                ->searchable()
+                                                ->nullable(),
+                                            Forms\Components\TextInput::make('quantity')
+                                                ->label('Quantity')
+                                                ->default(1)
+                                                ->live()
+                                                ->dehydrated()
+                                                ->numeric(),
+                                            Forms\Components\TextInput::make('unit_price')
+                                                ->label('Unit Price')
+                                                ->numeric()
+                                                ->disabled()
+                                                ->dehydrated(),
+                                            Forms\Components\Placeholder::make('total_price')
+                                                ->label('Total Price')
+                                                ->content(function ($get) {
+                                                    return $get('quantity') * $get('unit_price');}),      
+                                        ])->columns(4),
+                                    ]),
+        
+                                
                 ])->columnSpanFull()
             ]);
     }
