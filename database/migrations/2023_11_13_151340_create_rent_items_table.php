@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('rent_id')->constrained()->cascadeOnDelete();
             $table->foreignId('equipment_id')->nullable()->constrained()->cascadeOnDelete();
-            $table->unsignedBigInteger('quantity');
-            $table->decimal('unit_price', 10 ,2);
+            $table->unsignedBigInteger('quantity')->nullable();
+            $table->decimal('unit_price', 10 ,2)->nullable();
             $table->timestamps();
         });
     }

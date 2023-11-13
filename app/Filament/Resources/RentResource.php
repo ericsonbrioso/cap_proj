@@ -109,8 +109,7 @@ class RentResource extends Resource
                                                 ->reactive()
                                                 ->afterStateUpdated(fn ($state, Forms\Set $set)=>
                                                     $set('unit_price', Equipment::find($state)?->price ?? 0))
-                                                ->searchable()
-                                                ->nullable(),
+                                                ->searchable(),
                                             Forms\Components\TextInput::make('quantity')
                                                 ->label('Quantity')
                                                 ->default(1)
