@@ -66,7 +66,7 @@ class RentResource extends Resource
                             ->schema([
     
                                 Forms\Components\Repeater::make('packageitems')
-                                    ->label('Package Items')
+                                    ->label('Items')
                                     ->relationship()
                                     ->schema([  
     
@@ -155,13 +155,19 @@ class RentResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->where('user_id', auth()->id()))    
+        $user = auth()->user();
+
+    return $table
+        ->modifyQueryUsing(function (Builder $query) use ($user) {
+            if ($user && !$user->isAdmin()) {   
+                $query->where('user_id', $user->id);
+            }
+        })    
             ->columns([
                 Tables\Columns\TextColumn::make('rent_number')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('user.name')
-                    ->label('Clents Name')
+                    ->label('Client Name')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('date_of_delivery') 
                     ->searchable(),
