@@ -11,6 +11,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Forms\Components\ColorPicker;
 
 class TypeResource extends Resource
 {
@@ -24,10 +25,36 @@ class TypeResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('name')
-                    ->required()
-                    ->maxLength(255),
-            ]);
+                Forms\Components\Group::make()
+                    ->schema([
+
+                        Forms\Components\Section::make()
+                            ->schema([
+
+                                Forms\Components\TextInput::make('name')
+                                    ->required()
+                                    ->maxLength(255),
+                                Forms\Components\ColorPicker::make('color')
+                                    ->label('Primary Color'),
+
+                            ]),
+
+                    ]),
+
+                    Forms\Components\Group::make()
+                    ->schema([
+
+                        Forms\Components\Section::make()
+                            ->schema([
+                                
+                                Forms\Components\Toggle::make('status')
+                                    ->label('Visibility')
+                                    ->helperText('Enable or Disable Type Visibility'),
+
+                            ]),
+
+                    ]),
+            ]);    
     }
 
     public static function table(Table $table): Table
@@ -36,10 +63,14 @@ class TypeResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
+                Tables\Columns\IconColumn::make('status')
+                    ->label('Visibility')
+                    ->boolean()
+                    ->sortable(),
+                Tables\Columns\ColorColumn::make('color'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()

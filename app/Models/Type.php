@@ -12,7 +12,8 @@ class Type extends Model
 
     protected $fillable = [
         'name',
-        
+        'status',
+        'color',        
     ];
 
     public function equipment()

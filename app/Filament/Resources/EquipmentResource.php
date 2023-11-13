@@ -122,14 +122,14 @@ class EquipmentResource extends Resource
                         ->weight(FontWeight::Bold)
                         ->searchable()
                         ->sortable(),
+                    TextColumn::make('type.name')
+                        ->label('Type')
+                        ->searchable(),
                     IconColumn::make('status')->boolean()
-                        ->label('status'),
+                        ->label('Status'),
                     TextColumn::make('price')
                         ->prefix('₱')
                          ->sortable(),
-                    TextColumn::make('quantity')
-                        ->numeric()
-                        ->sortable(),
                     TextColumn::make('condition')
                         ->badge()
                         ->color(fn (string $state): string => match ($state)
@@ -138,9 +138,10 @@ class EquipmentResource extends Resource
                             'fair' => 'warning',
                             'poor' => 'danger',
                             }),
-                    TextColumn::make('type.name')
-                        ->label('Equipment Type')
-                        ->searchable(),
+                    
+                    TextColumn::make('quantity')
+                        ->numeric()
+                        ->sortable(),
                      TextColumn::make('created_at')
                         ->icon('heroicon-m-calendar-days')
                         ->dateTime()

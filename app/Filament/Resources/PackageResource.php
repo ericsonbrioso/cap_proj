@@ -93,7 +93,6 @@ class PackageResource extends Resource
 
                     Split::make([
                         ImageColumn::make('image')
-                            ->circular()
                             ->size(100),
                         TextColumn::make('name')
                             ->weight(FontWeight::Bold)
@@ -112,6 +111,7 @@ class PackageResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
+                Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
