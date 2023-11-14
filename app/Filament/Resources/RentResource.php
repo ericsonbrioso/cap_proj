@@ -157,11 +157,7 @@ class RentResource extends Resource
         $user = auth()->user();
 
     return $table
-        ->modifyQueryUsing(function (Builder $query) use ($user) {
-            if ($user && !$user->isAdmin()) {   
-                $query->where('user_id', $user->id);
-            }
-        })    
+           
             ->columns([
                 Tables\Columns\TextColumn::make('rent_number')
                     ->searchable(),
