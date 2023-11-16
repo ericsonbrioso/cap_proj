@@ -4,16 +4,16 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\EquipmentResource\Pages;
 use App\Filament\Resources\EquipmentResource\RelationManagers;
-use App\Models\Type;
 use App\Models\Equipment;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Tables\Columns\TextColumn;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Models\Type;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Radio;
@@ -23,8 +23,10 @@ use Filament\Tables\Columns\Layout\Panel;
 use Filament\Tables\Columns\Layout\Split;
 use Filament\Tables\Columns\Layout\Stack;
 use Filament\Tables\Columns\ImageColumn;
-
-
+use Filament\Actions\ActionGroup;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Actions\ViewAction;
 
 class EquipmentResource extends Resource
 {
@@ -91,9 +93,12 @@ class EquipmentResource extends Resource
                                         'poor' => 'Poor',
                                 ]),
 
-                                Forms\Components\Toggle::make('status')
+                                Forms\Components\Select::make('status')
                                     ->label('Availability')
-                                    ->helperText('Unavailable or Available'),
+                                    ->options([
+                                        'available' => 'Available',
+                                        'unavailable' => 'Unvailable',
+                                    ]),
              
                          ])->columns(2),
 
@@ -109,57 +114,62 @@ class EquipmentResource extends Resource
                 ]); 
 
     }
-
     public static function table(Table $table): Table
     {
         return $table
-
-            ->columns([
+        ->columns([
                       
-                    ImageColumn::make('image')
-                        ->circular(),
-                    TextColumn::make('name')
-                        ->weight(FontWeight::Bold)
-                        ->searchable()
-                        ->sortable(),
-                    TextColumn::make('type.name')
-                        ->label('Type')
-                        ->searchable(),
-                    IconColumn::make('status')->boolean()
-                        ->label('Status'),
-                    TextColumn::make('price')
-                        ->prefix('₱')
-                         ->sortable(),
-                    TextColumn::make('condition')
-                        ->badge()
-                        ->color(fn (string $state): string => match ($state)
-                            {
-                            'good' => 'success',
-                            'fair' => 'warning',
-                            'poor' => 'danger',
-                            }),
-                    
-                    TextColumn::make('quantity')
-                        ->numeric()
-                        ->sortable(),
-                     TextColumn::make('created_at')
-                        ->icon('heroicon-m-calendar-days')
-                        ->dateTime()
-                        ->sortable()
-                        ->toggleable(isToggledHiddenByDefault: true),
-                    TextColumn::make('updated_at')
-                        ->icon('heroicon-m-calendar-days')
-                        ->dateTime()
-                        ->sortable()
-                        ->toggleable(isToggledHiddenByDefault: true),
-            ])
-
+            ImageColumn::make('image')
+                ->circular(),
+            TextColumn::make('name')
+                ->weight(FontWeight::Bold)
+                ->searchable()
+                ->sortable(),
+            TextColumn::make('type.name')
+                ->label('Type')
+                ->searchable(),
+            TextColumn::make('status')
+                ->badge()
+                ->color(fn (string $state): string => match ($state)
+                    {
+                    'available' => 'success',
+                    'unavailable' => 'warning',
+                    }),
+            TextColumn::make('price')
+                ->prefix('₱')
+                 ->sortable(),
+            TextColumn::make('condition')
+                ->badge()
+                ->color(fn (string $state): string => match ($state)
+                    {
+                    'good' => 'success',
+                    'fair' => 'warning',
+                    'poor' => 'danger',
+                    }),
+            
+            TextColumn::make('quantity')
+                ->numeric()
+                ->sortable(),
+             TextColumn::make('created_at')
+                ->icon('heroicon-m-calendar-days')
+                ->dateTime()
+                ->sortable()
+                ->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('updated_at')
+                ->icon('heroicon-m-calendar-days')
+                ->dateTime()
+                ->sortable()
+                ->toggleable(isToggledHiddenByDefault: true),
+    ])
             ->filters([
                 //
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\ActionGroup::make([
+                    ViewAction::make(),
+                    EditAction::make(),
+                    DeleteAction::make(),
+                ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -168,8 +178,7 @@ class EquipmentResource extends Resource
             ])
             ->emptyStateActions([
                 Tables\Actions\CreateAction::make(),
-            ]);;
-            
+            ]);
     }
     
     public static function getRelations(): array
@@ -184,13 +193,13 @@ class EquipmentResource extends Resource
         return [
             'index' => Pages\ListEquipment::route('/'),
             'create' => Pages\CreateEquipment::route('/create'),
+            'view' => Pages\ViewEquipment::route('/{record}'),
             'edit' => Pages\EditEquipment::route('/{record}/edit'),
         ];
-    } 
-
+    }  
+    
     public static function getNavigationBadge(): ?string
     {
         return static::getModel()::count();
-    } 
-
+    }
 }

@@ -3,7 +3,12 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\RentResource\Pages;
+use App\Filament\Resources\RentResource\RelationManagers;
 use App\Models\Rent;
+use Filament\Actions\ActionGroup;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Actions\ViewAction;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -21,6 +26,11 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\FormsComponent;
 use Filament\Resources\Forms\Components;
 use Filament\Forms\Components\TimePicker;
+use Filament\Infolists\Infolist;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Components\Section;
+use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
+use Ysfkaya\FilamentPhoneInput\Tables\PhoneInputColumn;
 
 
 
@@ -70,11 +80,10 @@ class RentResource extends Resource
                                 ->seconds(false)
                                 ->native(false)
                                 ->minDate(now()->subHours(14)),   
-                            Forms\Components\TextInput::make('contact')
-                                ->label('Contact Number')
-                                ->type('number')
+                            PhoneInput::make('contact')
+                                ->disallowDropdown()
                                 ->required()
-                                ->maxValue(11),
+                                ->defaultCountry('US'),
                                 
                             
                             ])->columns(2),
@@ -116,7 +125,7 @@ class RentResource extends Resource
                                             return $get('quantity') * $get('unit_price');}),      
                                 ])
                             ])
-                        ]),
+                        ])->columnSpanFull(),
 
                     Forms\Components\Group::make()
                         ->schema([
@@ -125,7 +134,7 @@ class RentResource extends Resource
                             ->schema([
                         
                                 Forms\Components\Repeater::make('items')
-                                    ->label('Custom Package')
+                                    ->label('Custom Packages')
                                     ->relationship()
                                     ->schema([  
 
@@ -153,7 +162,7 @@ class RentResource extends Resource
                                             return $get('quantity') * $get('unit_price');}),      
                             ])
                         ])
-                    ]),
+                    ])->columnSpanFull(),
             ]);
     }
 
@@ -173,14 +182,15 @@ class RentResource extends Resource
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Client Name')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('contact'),
+                Tables\Columns\TextColumn::make('address'),
+                Tables\Columns\TextColumn::make('created_at')
+                    ->dateTime()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('date_of_delivery') 
                     ->searchable(),
                 Tables\Columns\TextColumn::make('date_of_pickup')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
@@ -190,8 +200,12 @@ class RentResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\ActionGroup::make([
+                    ViewAction::make(),
+                    EditAction::make(),
+                    DeleteAction::make(),
+                ]),
+                
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -202,7 +216,8 @@ class RentResource extends Resource
                 Tables\Actions\CreateAction::make(),
             ]);
     }
-    
+
+
     public static function getRelations(): array
     {
         return [
@@ -215,6 +230,7 @@ class RentResource extends Resource
         return [
             'index' => Pages\ListRents::route('/'),
             'create' => Pages\CreateRent::route('/create'),
+            'view' => Pages\ViewRent::route('/{record}'),
             'edit' => Pages\EditRent::route('/{record}/edit'),
         ];
     } 
@@ -222,6 +238,5 @@ class RentResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         return static::getModel()::count();
-    } 
-     
+    }
 }

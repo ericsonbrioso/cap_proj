@@ -10,9 +10,9 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Tables\Columns\TextColumn;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\MarkdownEditor;
 use Filament\Tables\Columns\IconColumn;
@@ -85,27 +85,27 @@ class PackageResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->contentGrid([
-                'md' => 2,
-                'xl' => 3,
-            ])
-            ->columns([
+        ->contentGrid([
+            'md' => 2,
+            'xl' => 3,
+        ])
+        ->columns([
 
-                    Split::make([
-                        ImageColumn::make('image')
-                            ->size(100),
-                        TextColumn::make('name')
-                            ->weight(FontWeight::Bold)
-                            ->searchable()
-                            ->sortable(),
-                        IconColumn::make('status')->boolean()
-                            ->label('status'),
-                        TextColumn::make('price')
-                            ->prefix('₱')
-                            ->sortable(),
-                    ]), 
-                
-            ])
+                Split::make([
+                    ImageColumn::make('image')
+                        ->size(100),
+                    TextColumn::make('name')
+                        ->weight(FontWeight::Bold)
+                        ->searchable()
+                        ->sortable(),
+                    IconColumn::make('status')->boolean()
+                        ->label('status'),
+                    TextColumn::make('price')
+                        ->prefix('₱')
+                        ->sortable(),
+                ]), 
+            
+        ])
             ->filters([
                 //
             ])
@@ -115,7 +115,7 @@ class PackageResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                  
+                    Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ])
             ->emptyStateActions([
@@ -135,6 +135,7 @@ class PackageResource extends Resource
         return [
             'index' => Pages\ListPackages::route('/'),
             'create' => Pages\CreatePackage::route('/create'),
+            'view' => Pages\ViewPackage::route('/{record}'),
             'edit' => Pages\EditPackage::route('/{record}/edit'),
         ];
     } 
@@ -142,5 +143,5 @@ class PackageResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         return static::getModel()::count();
-    } 
+    }
 }

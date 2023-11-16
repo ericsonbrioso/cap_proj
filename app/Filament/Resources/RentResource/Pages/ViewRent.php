@@ -4,17 +4,16 @@ namespace App\Filament\Resources\RentResource\Pages;
 
 use App\Filament\Resources\RentResource;
 use Filament\Actions;
-use Filament\Resources\Pages\EditRecord;
+use Filament\Resources\Pages\ViewRecord;
 
-class EditRent extends EditRecord
+class ViewRent extends ViewRecord
 {
     protected static string $resource = RentResource::class;
 
     protected function getHeaderActions(): array
     {
         return [
-            Actions\ViewAction::make(),
-            Actions\DeleteAction::make(),
+            Actions\EditAction::make(),
         ];
     }
 }
