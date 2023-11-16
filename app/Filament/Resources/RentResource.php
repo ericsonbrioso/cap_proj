@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Enums\RentStatusEnum;
 use App\Filament\Resources\RentResource\Pages;
 use App\Filament\Resources\RentResource\RelationManagers;
 use App\Models\Rent;
@@ -21,6 +22,8 @@ use Filament\Forms\Components\Select;
 use App\Models\Equipment;
 use App\Models\Package;
 use App\Models\User;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Actions\Action as ActionsAction;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\FormsComponent;
@@ -31,7 +34,6 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\Section;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 use Ysfkaya\FilamentPhoneInput\Tables\PhoneInputColumn;
-
 
 
 class RentResource extends Resource
@@ -84,19 +86,27 @@ class RentResource extends Resource
                                 ->disallowDropdown()
                                 ->required()
                                 ->defaultCountry('US'),
-                                
-                            
+                            Forms\Components\Select::make('status')
+                                ->label('Status')
+                                ->options([
+                                    'pending' => RentStatusEnum::PENDING->value,
+                                    'processing' => RentStatusEnum::PROCESSING->value,
+                                    'completed' => RentStatusEnum::COMPLETED->value,
+                                    'declined' => RentStatusEnum::DECLINED->value,
+                                ])
+                                ->disabled()
+                                    
                             ])->columns(2),
 
                     ])->columnSpanFull(),
                     Forms\Components\Group::make()
                         ->schema([
 
-                        Forms\Components\Section::make()
+                        Forms\Components\Section::make('Packages')
                             ->schema([
 
                                 Forms\Components\Repeater::make('packageitems')
-                                    ->label('Items')
+                                    ->label('')
                                     ->relationship()
                                     ->schema([  
 
@@ -123,18 +133,18 @@ class RentResource extends Resource
                                         ->label('Total Price')
                                         ->content(function ($get) {
                                             return $get('quantity') * $get('unit_price');}),      
-                                ])
+                                ])->columns(2),
                             ])
-                        ])->columnSpanFull(),
+                        ]),
 
                     Forms\Components\Group::make()
                         ->schema([
 
-                        Forms\Components\Section::make()
+                        Forms\Components\Section::make('Custom Package')
                             ->schema([
                         
                                 Forms\Components\Repeater::make('items')
-                                    ->label('Custom Packages')
+                                    ->label('')
                                     ->relationship()
                                     ->schema([  
 
@@ -160,9 +170,9 @@ class RentResource extends Resource
                                         ->label('Total Price')
                                         ->content(function ($get) {
                                             return $get('quantity') * $get('unit_price');}),      
-                            ])
+                            ])->columns(2),
                         ])
-                    ])->columnSpanFull(),
+                    ]),
             ]);
     }
 
@@ -184,13 +194,15 @@ class RentResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('contact'),
                 Tables\Columns\TextColumn::make('address'),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable(),
+                Tables\Columns\TextColumn::make('status'),
                 Tables\Columns\TextColumn::make('date_of_delivery') 
                     ->searchable(),
                 Tables\Columns\TextColumn::make('date_of_pickup')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('created_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
@@ -203,6 +215,17 @@ class RentResource extends Resource
                 Tables\Actions\ActionGroup::make([
                     ViewAction::make(),
                     EditAction::make(),
+                        Action::make('Edit Status')
+                            ->form([
+                                Forms\Components\Select::make('status')
+                                ->label('Status')
+                                ->options([
+                                    'pending' => RentStatusEnum::PENDING->value,
+                                    'processing' => RentStatusEnum::PROCESSING->value,
+                                    'completed' => RentStatusEnum::COMPLETED->value,
+                                    'declined' => RentStatusEnum::DECLINED->value,
+                                ])
+                            ]),
                     DeleteAction::make(),
                 ]),
                 

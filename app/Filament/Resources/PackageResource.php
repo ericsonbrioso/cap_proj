@@ -54,7 +54,21 @@ class PackageResource extends Resource
 
                             ])->columns(2),
 
-                    ]),
+                    ])->columnSpanFull(),
+
+                Forms\Components\Group::make()
+                    ->schema([
+
+                        Forms\Components\Section::make('Insert Image')
+                            ->schema([  
+
+                           Forms\Components\FileUpload::make('image')
+                               ->image()
+                               ->preserveFilenames()
+                               ->openable(),
+     
+                   ])->collapsible()
+                 ]),   
 
                 Forms\Components\Group::make()
                     ->schema([
@@ -62,22 +76,16 @@ class PackageResource extends Resource
                         Forms\Components\Section::make('Status')
                             ->schema([  
 
-                                Forms\Components\Toggle::make('status')
+                                Forms\Components\Select::make('status')
                                     ->label('Availability')
-                                    ->helperText('Unavailable or Available'),
+                                    ->options([
+                                        'available' => 'Available',
+                                        'unavailable' => 'Unvailable',
+                                    ]),
              
-                         ])->columns(2),
-
-                        Forms\Components\Section::make('Insert Image')
-                            ->schema([  
-
-                                Forms\Components\FileUpload::make('image')
-                                    ->image()
-                                    ->preserveFilenames()
-                                    ->openable(),
-          
-                        ])->collapsible()
-                    ])
+                            ])->columns(2)
+                         ]),
+                
                 ]); 
 
     }
@@ -98,11 +106,19 @@ class PackageResource extends Resource
                         ->weight(FontWeight::Bold)
                         ->searchable()
                         ->sortable(),
-                    IconColumn::make('status')->boolean()
-                        ->label('status'),
-                    TextColumn::make('price')
-                        ->prefix('₱')
-                        ->sortable(),
+                    Stack::make([
+                        TextColumn::make('status')
+                            ->badge()
+                            ->color(fn (string $state): string => match ($state)
+                            {
+                            'available' => 'success',
+                            'unavailable' => 'warning',
+                            }),
+                        TextColumn::make('price')
+                            ->prefix('₱')
+                            ->sortable(),
+                    ])
+                    
                 ]), 
             
         ])
