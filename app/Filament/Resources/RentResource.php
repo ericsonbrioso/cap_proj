@@ -22,8 +22,7 @@ use Filament\Forms\Components\Select;
 use App\Models\Equipment;
 use App\Models\Package;
 use App\Models\User;
-use Filament\Actions\Action;
-use Filament\Forms\Components\Actions\Action as ActionsAction;
+use Filament\Forms\Components\Actions;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\FormsComponent;
@@ -32,6 +31,8 @@ use Filament\Forms\Components\TimePicker;
 use Filament\Infolists\Infolist;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\Section;
+use Filament\Notifications\Notification;
+use Filament\Tables\Actions\Action;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 use Ysfkaya\FilamentPhoneInput\Tables\PhoneInputColumn;
 
@@ -64,6 +65,17 @@ class RentResource extends Resource
                             Forms\Components\Hidden::make('user_id')
                                 ->default(auth()->check() ? auth()->user()->id : null)
                                 ->required(),
+                             Forms\Components\DateTimePicker ::make('date_of_delivery')
+                                ->suffixIcon('heroicon-m-calendar-days')
+                                ->prefix('Start')  
+                                ->required()
+                                ->seconds(false)
+                                ->native(false)
+                                ->minDate(now()->subHours(14)), 
+                            Forms\Components\TextInput::make('address')
+                                ->label('Complete Address')
+                                ->required()
+                                ->maxLength(255),
                             Forms\Components\DateTimePicker::make('date_of_pickup')
                                 ->suffixIcon('heroicon-m-calendar-days') 
                                 ->prefix('End')  
@@ -71,28 +83,18 @@ class RentResource extends Resource
                                 ->seconds(false)
                                 ->native(false)
                                 ->minDate(now()),
-                            Forms\Components\TextInput::make('address')
-                                ->label('Complete Address')
-                                ->required()
-                                ->maxLength(255),
-                            Forms\Components\DateTimePicker ::make('date_of_delivery')
-                                ->suffixIcon('heroicon-m-calendar-days')
-                                ->prefix('Start')  
-                                ->required()
-                                ->seconds(false)
-                                ->native(false)
-                                ->minDate(now()->subHours(14)),   
-                            PhoneInput::make('contact')
+                           PhoneInput::make('contact')
                                 ->disallowDropdown()
                                 ->required()
                                 ->defaultCountry('US'),
                             Forms\Components\Select::make('status')
                                 ->label('Status')
+                                ->default('pending')
                                 ->options([
                                     'pending' => RentStatusEnum::PENDING->value,
                                     'processing' => RentStatusEnum::PROCESSING->value,
                                     'completed' => RentStatusEnum::COMPLETED->value,
-                                    'declined' => RentStatusEnum::DECLINED->value,
+                                    'cancelled' => RentStatusEnum::CANCELLED->value,
                                 ])
                                 ->disabled()
                                     
@@ -194,7 +196,15 @@ class RentResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('contact'),
                 Tables\Columns\TextColumn::make('address'),
-                Tables\Columns\TextColumn::make('status'),
+                Tables\Columns\TextColumn::make('status')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state)
+                        {
+                        'pending' => 'info',
+                        'processing' => 'warning',
+                        'completed' => 'success',
+                        'cancelled' => 'danger',
+                        }),
                 Tables\Columns\TextColumn::make('date_of_delivery') 
                     ->searchable(),
                 Tables\Columns\TextColumn::make('date_of_pickup')
@@ -215,19 +225,39 @@ class RentResource extends Resource
                 Tables\Actions\ActionGroup::make([
                     ViewAction::make(),
                     EditAction::make(),
-                        Action::make('Edit Status')
+                    Action::make('Edit Status')
+                            ->icon('heroicon-m-pencil-square')
                             ->form([
-                                Forms\Components\Select::make('status')
+                            Forms\Components\Select::make('status')
                                 ->label('Status')
-                                ->options([
-                                    'pending' => RentStatusEnum::PENDING->value,
-                                    'processing' => RentStatusEnum::PROCESSING->value,
-                                    'completed' => RentStatusEnum::COMPLETED->value,
-                                    'declined' => RentStatusEnum::DECLINED->value,
-                                ])
-                            ]),
-                    DeleteAction::make(),
-                ]),
+                                ->options(RentStatusEnum::class)
+                            ])
+                                ->action(function (Rent $rent, array $data): void {
+                                    $rent->status = $data['status'];
+                                    $rent->save();
+
+                                    Notification::make()
+                                        ->title('Status Updated')
+                                        ->duration(3000)
+                                        ->success()
+                                        ->send();
+                                })
+                                ->visible(fn ($data) => auth()->user()->isAdmin()),
+                    Action::make('Cancel Order')
+                            ->icon('heroicon-m-trash')
+                            ->color('danger')
+                            ->action(function (Rent $rent): void {
+                                $rent->status = RentStatusEnum::CANCELLED->value;
+                                $rent->save();
+
+                                Notification::make()
+                                ->title('Order Cancelled')
+                                ->duration(3000)
+                                ->success()
+                                ->send();
+                            })
+                            ->visible(fn ($data) => auth()->user() && !auth()->user()->isAdmin()),
+                ])
                 
             ])
             ->bulkActions([
@@ -259,7 +289,18 @@ class RentResource extends Resource
     } 
     
     public static function getNavigationBadge(): ?string
-    {
-        return static::getModel()::count();
+{
+    $user = auth()->user();
+
+    if ($user) {
+        $userRentCount = $user->isAdmin()
+            ? Rent::count() 
+            : Rent::where('user_id', $user->id)->count(); 
+
+        return $userRentCount > 0 ? (string) $userRentCount : null;
     }
+
+    return null;
+}
+
 }

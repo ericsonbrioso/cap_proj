@@ -29,7 +29,7 @@ class RentPolicy
      */
     public function create(User $user): bool
     {
-        return $user->isAdmin() || $user->isUser();
+        return $user->isUser();
     }
 
     /**
@@ -37,7 +37,7 @@ class RentPolicy
      */
     public function update(User $user, Rent $rent): bool
     {
-        return $user->isAdmin() || $user->isUser();
+        return $user->isUser();
     }
 
     /**
@@ -45,7 +45,7 @@ class RentPolicy
      */
     public function delete(User $user, Rent $rent): bool
     {
-        return $user->isAdmin() || $user->isUser();
+        return $user->isAdmin();
     }
 
     /**
@@ -53,7 +53,7 @@ class RentPolicy
      */
     public function restore(User $user, Rent $rent): bool
     {
-        return $user->isAdmin() || $user->isUser();
+        return $user->isAdmin();
     }
 
     /**
@@ -61,6 +61,7 @@ class RentPolicy
      */
     public function forceDelete(User $user, Rent $rent): bool
     {
-        return $user->isAdmin() || $user->isUser();
+        return $user->isAdmin();
     }
+
 }

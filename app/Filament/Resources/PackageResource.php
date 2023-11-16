@@ -81,7 +81,8 @@ class PackageResource extends Resource
                                     ->options([
                                         'available' => 'Available',
                                         'unavailable' => 'Unvailable',
-                                    ]),
+                                    ])
+                                    ->required(),
              
                             ])->columns(2)
                          ]),

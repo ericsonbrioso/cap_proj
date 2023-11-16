@@ -3,8 +3,8 @@
 namespace App\Enums;
 
 enum RentStatusEnum : string {
-    case PENDING = 'pending';
-    case PROCESSING = 'processing';
     case COMPLETED = 'completed';
-    case DECLINED = 'declined';
+    case PROCESSING = 'processing';
+    case CANCELLED = 'cancelled';
+    case PENDING = 'pending';
 }

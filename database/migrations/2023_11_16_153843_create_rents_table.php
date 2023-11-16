@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('contact');
             $table->dateTime('date_of_pickup');
             $table->dateTime('date_of_delivery');
-            $table->enum('status',['pending','processing','completed','declined'])->default('pending');
+            $table->enum('status',['pending','processing','completed','cancelled'])->default('pending');
             $table->softDeletes();
             $table->timestamps();
         });
