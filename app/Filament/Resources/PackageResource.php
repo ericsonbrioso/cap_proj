@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\PackageResource\Pages;
 use App\Filament\Resources\PackageResource\RelationManagers;
 use App\Models\Package;
+use App\Models\Rent;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -15,12 +16,19 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\MarkdownEditor;
+use Filament\Infolists\Components\ImageEntry;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Support\Enums\FontWeight;
 use Filament\Tables\Columns\Layout\Panel;
 use Filament\Tables\Columns\Layout\Split;
 use Filament\Tables\Columns\Layout\Stack;
 use Filament\Tables\Columns\ImageColumn;
+use Filament\Infolists\Infolist;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Components\Section;
+
+use Filament\Support\Colors\Color;
+use Filament\Support\Facades\FilamentColor;
 
 class PackageResource extends Resource
 {
@@ -139,7 +147,7 @@ class PackageResource extends Resource
                 Tables\Actions\CreateAction::make(),
             ]);
     }
-    
+
     public static function getRelations(): array
     {
         return [

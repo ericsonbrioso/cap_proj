@@ -120,7 +120,7 @@ class EquipmentResource extends Resource
         ->columns([
                       
             ImageColumn::make('image')
-                ->circular(),
+                ->size(80),
             TextColumn::make('name')
                 ->weight(FontWeight::Bold)
                 ->searchable()

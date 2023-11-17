@@ -18,7 +18,6 @@ class Rent extends Model
         'quantity',
         'date_of_pickup',
         'date_of_delivery',
-        'total_price',
         'status', 
 
         

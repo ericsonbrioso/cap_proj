@@ -37,6 +37,7 @@ use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 use Ysfkaya\FilamentPhoneInput\Tables\PhoneInputColumn;
 
 
+
 class RentResource extends Resource
 {
     protected static ?string $model = Rent::class;
@@ -86,7 +87,7 @@ class RentResource extends Resource
                            PhoneInput::make('contact')
                                 ->disallowDropdown()
                                 ->required()
-                                ->defaultCountry('US'),
+                                ->defaultCountry('Philippines'),
                             Forms\Components\Select::make('status')
                                 ->label('Status')
                                 ->default('pending')
@@ -261,7 +262,7 @@ class RentResource extends Resource
                 
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ])
@@ -269,8 +270,7 @@ class RentResource extends Resource
                 Tables\Actions\CreateAction::make(),
             ]);
     }
-
-
+    
     public static function getRelations(): array
     {
         return [
