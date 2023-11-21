@@ -31,7 +31,7 @@ class ListRents extends ListRecords
         if ($isAdmin) {
             $tabs['all'] = ListRecordsTab::make('All rents')->badge(Rent::count());
 
-            $statuses = ['pending', 'processing', 'completed', 'cancelled'];
+            $statuses = ['pending', 'approved', 'completed', 'cancelled'];
 
             foreach ($statuses as $status) {
                 $statusCount = Rent::where('status', $status)->count();
@@ -44,7 +44,7 @@ class ListRents extends ListRecords
                 Rent::where('user_id', $user->id)->count()
             );
 
-            $statuses = ['pending', 'processing', 'completed', 'cancelled'];
+            $statuses = ['pending', 'approved', 'completed', 'cancelled'];
 
             foreach ($statuses as $status) {
                 $statusCount = Rent::where('user_id', $user->id)

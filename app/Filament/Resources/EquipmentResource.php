@@ -49,7 +49,8 @@ class EquipmentResource extends Resource
 
                                 Forms\Components\TextInput::make('name')
                                     ->required()
-                                    ->maxLength(255),
+                                    ->maxLength(255)
+                                    ->unique(ignoreRecord: true),
                                 Forms\Components\Select::make('type_id')
                                     ->options(Type::all()->pluck('name', 'id'))
                                     ->label('Equipment Type')
@@ -172,8 +173,8 @@ class EquipmentResource extends Resource
                 ]),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\BulkActionGroup::make([
+                    
                 ]),
             ])
             ->emptyStateActions([

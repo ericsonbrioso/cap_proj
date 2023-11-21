@@ -18,12 +18,14 @@ use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use App\Filament\Pages\Auth\Register;
+use Saade\FilamentFullCalendar\FilamentFullCalendarPlugin;
 
 class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
         return $panel
+            ->plugins([FilamentFullCalendarPlugin::make()]) 
             ->sidebarCollapsibleOnDesktop()
             ->darkMode(false)
             ->default()
@@ -34,6 +36,11 @@ class AdminPanelProvider extends PanelProvider
             ->registration() 
             ->profile()
             ->colors([
+                'danger' => Color::Rose,
+                'gray' => Color::Gray,
+                'info' => Color::Blue,
+                'primary' => Color::Indigo,
+                'success' => Color::Emerald,
                 'warning' => Color::Orange,
             ])
             ->font('Roboto Condensed')

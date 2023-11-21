@@ -33,6 +33,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\Section;
 use Filament\Notifications\Notification;
 use Filament\Tables\Actions\Action;
+use Illuminate\Database\Eloquent\Collection;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 use Ysfkaya\FilamentPhoneInput\Tables\PhoneInputColumn;
 
@@ -49,6 +50,7 @@ class RentResource extends Resource
     public static function Form(Form $form): Form
     {
         return $form
+            
             ->schema([
 
                 Forms\Components\Group::make()
@@ -77,7 +79,7 @@ class RentResource extends Resource
                                 ->label('Complete Address')
                                 ->required()
                                 ->maxLength(255),
-                            Forms\Components\DateTimePicker::make('date_of_pickup')
+                            Forms\Components\DateTimePicker::make('date_of_pickup')->after('date_of_delivery')
                                 ->suffixIcon('heroicon-m-calendar-days') 
                                 ->prefix('End')  
                                 ->required()
@@ -93,7 +95,7 @@ class RentResource extends Resource
                                 ->default('pending')
                                 ->options([
                                     'pending' => RentStatusEnum::PENDING->value,
-                                    'processing' => RentStatusEnum::PROCESSING->value,
+                                    'approved' => RentStatusEnum::APPROVED->value,
                                     'completed' => RentStatusEnum::COMPLETED->value,
                                     'cancelled' => RentStatusEnum::CANCELLED->value,
                                 ])
@@ -201,9 +203,9 @@ class RentResource extends Resource
                     ->badge()
                     ->color(fn (string $state): string => match ($state)
                         {
-                        'pending' => 'info',
-                        'processing' => 'warning',
-                        'completed' => 'success',
+                        'pending' => 'warning',
+                        'approved' => 'success',
+                        'completed' => 'info',
                         'cancelled' => 'danger',
                         }),
                 Tables\Columns\TextColumn::make('date_of_delivery') 
@@ -244,26 +246,45 @@ class RentResource extends Resource
                                         ->send();
                                 })
                                 ->visible(fn ($data) => auth()->user()->isAdmin()),
-                    Action::make('Cancel Order')
-                            ->icon('heroicon-m-trash')
-                            ->color('danger')
-                            ->action(function (Rent $rent): void {
-                                $rent->status = RentStatusEnum::CANCELLED->value;
-                                $rent->save();
 
-                                Notification::make()
-                                ->title('Order Cancelled')
-                                ->duration(3000)
-                                ->success()
-                                ->send();
-                            })
-                            ->visible(fn ($data) => auth()->user() && !auth()->user()->isAdmin()),
+                            Action::make('Cancel Rent')
+                                ->icon('heroicon-m-trash')
+                                ->color('danger')
+                                ->action(function (Rent $rent): void {
+                                 
+                                    $currentDate = now();
+                                    $rentalStartDate = $rent->date_of_delivery;
+                                    $daysDifference = $currentDate->diffInDays($rentalStartDate);
+                            
+                                    if ($daysDifference >= 5) {
+                                        // Allow cancellation
+                                        $rent->status = RentStatusEnum::CANCELLED->value;
+                                        $rent->save();
+                            
+                                        Notification::make()
+                                            ->title('Rent Cancelled')
+                                            ->duration(5000)
+                                            ->success()
+                                            ->body('The rent has been successfully cancelled.')
+                                            ->send();
+                                    } else {
+                                      
+                                        Notification::make()
+                                            ->title('Cancellation Not Allowed')
+                                            ->duration(5000) 
+                                            ->danger() 
+                                            ->body('You cannot cancel the rent within 5 days of the rental period.')
+                                            ->send();
+                                    }
+                                })
+                                ->visible(fn ($data) => auth()->user() && !auth()->user()->isAdmin()),
+                            
                 ])
                 
             ])
             ->bulkActions([
                     Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+            
                 ]),
             ])
             ->emptyStateActions([

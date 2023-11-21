@@ -12,9 +12,11 @@
         "filament/filament": "3.0-stable",
         "filament/widgets": "3.0-stable",
         "guzzlehttp/guzzle": "^7.2",
+        "ibrahimbougaoua/filament-rating-star": "^0.0.1",
         "laravel/framework": "^10.10",
         "laravel/sanctum": "^3.3",
         "laravel/tinker": "^2.8",
+        "saade/filament-fullcalendar": "3.0",
         "ysfkaya/filament-phone-input": "^2.1"
     },
     "require-dev": {

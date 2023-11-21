@@ -29,6 +29,8 @@ use Filament\Infolists\Components\Section;
 
 use Filament\Support\Colors\Color;
 use Filament\Support\Facades\FilamentColor;
+use IbrahimBougaoua\FilamentRatingStar\Actions\RatingStar;
+use IbrahimBougaoua\FilamentRatingStar\Columns\RatingStarColumn;
 
 class PackageResource extends Resource
 {
@@ -57,8 +59,9 @@ class PackageResource extends Resource
                                     ->required()
                                     ->numeric()
                                     ->prefix('₱'),
-                                Forms\Components\MarkdownEditor::make('description')
-                                    ->columnSpan('full'),
+                                Forms\Components\MarkdownEditor::make('description'),
+                                //RatingStar::make('rating')
+                                    //->label('Rating')
 
                             ])->columns(2),
 
@@ -126,6 +129,7 @@ class PackageResource extends Resource
                         TextColumn::make('price')
                             ->prefix('₱')
                             ->sortable(),
+                        RatingStarColumn::make('rating')
                     ])
                     
                 ]), 
@@ -140,7 +144,7 @@ class PackageResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    
                 ]),
             ])
             ->emptyStateActions([
