@@ -11,12 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('rent_items', function (Blueprint $table) {
+        Schema::create('packages', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('rent_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('equipment_id')->nullable()->constrained()->cascadeOnDelete();
-            $table->unsignedBigInteger('quantity')->nullable();
-            $table->decimal('unit_price', 10 ,2)->nullable();
+            $table->string('name');
+            $table->string('description')->nullable();
+            $table->string('image')->nullable();
+            $table->string('status');
+            $table->decimal('subtotal', 10 ,2)->nullable();
             $table->timestamps();
         });
     }
@@ -26,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('rent_items');
+        Schema::dropIfExists('packages');
     }
 };

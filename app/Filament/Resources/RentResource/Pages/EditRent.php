@@ -17,4 +17,5 @@ class EditRent extends EditRecord
             Actions\DeleteAction::make(),
         ];
     }
+    
 }

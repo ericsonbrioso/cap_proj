@@ -118,59 +118,44 @@ class EquipmentResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+        ->contentGrid([
+            'md' => 2,
+            'xl' => 3,
+        ])
         ->columns([
-                      
-            ImageColumn::make('image')
-                ->size(80),
-            TextColumn::make('name')
-                ->weight(FontWeight::Bold)
-                ->searchable()
-                ->sortable(),
-            TextColumn::make('type.name')
-                ->label('Type')
-                ->searchable(),
-            TextColumn::make('status')
-                ->badge()
-                ->color(fn (string $state): string => match ($state)
-                    {
-                    'available' => 'success',
-                    'unavailable' => 'warning',
-                    }),
-            TextColumn::make('price')
-                ->prefix('₱')
-                 ->sortable(),
-            TextColumn::make('condition')
-                ->badge()
-                ->color(fn (string $state): string => match ($state)
-                    {
-                    'good' => 'success',
-                    'fair' => 'warning',
-                    'poor' => 'danger',
-                    }),
             
-            TextColumn::make('quantity')
-                ->numeric()
-                ->sortable(),
-             TextColumn::make('created_at')
-                ->icon('heroicon-m-calendar-days')
-                ->dateTime()
-                ->sortable()
-                ->toggleable(isToggledHiddenByDefault: true),
-            TextColumn::make('updated_at')
-                ->icon('heroicon-m-calendar-days')
-                ->dateTime()
-                ->sortable()
-                ->toggleable(isToggledHiddenByDefault: true),
+            Split::make([
+                ImageColumn::make('image')
+                    ->size(100)
+                    ->stacked(),
+                TextColumn::make('name')
+                    ->weight(FontWeight::Bold)
+                    ->searchable()
+                    ->sortable(),
+                Stack::make([
+                    TextColumn::make('status')
+                        ->badge()
+                        ->color(fn (string $state): string => match ($state)
+                        {
+                        'available' => 'success',
+                        'unavailable' => 'warning',
+                        }),
+                    TextColumn::make('price')
+                        ->prefix('₱')
+                        ->sortable(),
+                   // RatingStarColumn::make('rating')
+                ])
+                
+            ]), 
     ])
             ->filters([
                 //
             ])
             ->actions([
-                Tables\Actions\ActionGroup::make([
+        
                     ViewAction::make(),
                     EditAction::make(),
-                    DeleteAction::make(),
-                ]),
+
             ])
             ->bulkActions([
                     Tables\Actions\BulkActionGroup::make([

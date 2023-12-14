@@ -13,28 +13,27 @@ class Rent extends Model
     protected $fillable = [
         'rent_number',
         'user_id',
+        'equipment_id',
         'address',
         'contact',
         'quantity',
+        'unit_price',
+        'total_price',
         'date_of_pickup',
         'date_of_delivery',
         'status', 
 
-        
     ];
+
+
 
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    public function items()
+    public function equipment()
     {
-        return $this->hasMany(RentItem::class);
-    }
-
-    public function packageitems()
-    {
-        return $this->hasMany(RentPackage::class);
+        return $this->belongsTo(Equipment::class);
     }
 }

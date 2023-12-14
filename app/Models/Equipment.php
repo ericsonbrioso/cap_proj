@@ -26,4 +26,5 @@ class Equipment extends Model
     {
         return $this->belongsTo(Type::class);
     }
+    
 }

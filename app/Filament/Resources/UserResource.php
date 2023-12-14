@@ -40,9 +40,6 @@ class UserResource extends Resource
                     ->password()
                     ->required()
                     ->maxLength(255),
-                Forms\Components\Radio::make('role')
-                    ->required()
-                    ->options(User::ROLES),
             ]);
     }
 

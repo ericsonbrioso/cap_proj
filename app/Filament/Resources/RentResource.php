@@ -23,16 +23,24 @@ use App\Models\Equipment;
 use App\Models\Package;
 use App\Models\User;
 use Filament\Forms\Components\Actions;
-use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\FormsComponent;
 use Filament\Resources\Forms\Components;
 use Filament\Forms\Components\TimePicker;
+use Filament\Infolists\Components\Grid;
+use Filament\Infolists\Components\Group;
 use Filament\Infolists\Infolist;
+use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\Section;
 use Filament\Notifications\Notification;
+use Filament\Support\Enums\FontWeight;
 use Filament\Tables\Actions\Action;
+use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\Layout\Split;
+use Filament\Tables\Columns\Layout\Stack;
+use Filament\Tables\Columns\Layout\Panel;
+use Filament\Tables\Columns\TextColumn;
 use Illuminate\Database\Eloquent\Collection;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 use Ysfkaya\FilamentPhoneInput\Tables\PhoneInputColumn;
@@ -45,10 +53,13 @@ class RentResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-shopping-cart';
 
+    protected static ?string $navigationLabel = 'Rent Equipments';
+
     protected static ?string $navigationGroup = 'Renting';
 
     public static function Form(Form $form): Form
     {
+        $equipments = Equipment::get();
         return $form
             
             ->schema([
@@ -68,165 +79,135 @@ class RentResource extends Resource
                             Forms\Components\Hidden::make('user_id')
                                 ->default(auth()->check() ? auth()->user()->id : null)
                                 ->required(),
-                             Forms\Components\DateTimePicker ::make('date_of_delivery')
-                                ->suffixIcon('heroicon-m-calendar-days')
-                                ->prefix('Start')  
+                            PhoneInput::make('contact')
+                                ->disallowDropdown()
                                 ->required()
-                                ->seconds(false)
-                                ->native(false)
-                                ->minDate(now()->subHours(14)), 
+                                ->defaultCountry('Philippines'),
                             Forms\Components\TextInput::make('address')
                                 ->label('Complete Address')
                                 ->required()
                                 ->maxLength(255),
+                            Forms\Components\DateTimePicker::make('date_of_delivery')
+                                ->label('Set Delivery Date:')
+                                ->suffixIcon('heroicon-m-calendar-days')
+                                ->prefix('Start')
+                                ->seconds(false)
+                                ->native(false)
+                                ->minDate(now()->subHours(14)),
                             Forms\Components\DateTimePicker::make('date_of_pickup')->after('date_of_delivery')
+                                ->label('Set Date of Pick-up:')
                                 ->suffixIcon('heroicon-m-calendar-days') 
                                 ->prefix('End')  
                                 ->required()
                                 ->seconds(false)
                                 ->native(false)
                                 ->minDate(now()),
-                           PhoneInput::make('contact')
-                                ->disallowDropdown()
-                                ->required()
-                                ->defaultCountry('Philippines'),
-                            Forms\Components\Select::make('status')
-                                ->label('Status')
-                                ->default('pending')
-                                ->options([
-                                    'pending' => RentStatusEnum::PENDING->value,
-                                    'approved' => RentStatusEnum::APPROVED->value,
-                                    'completed' => RentStatusEnum::COMPLETED->value,
-                                    'cancelled' => RentStatusEnum::CANCELLED->value,
-                                ])
-                                ->disabled()
-                                    
+                            
+
+                        ])->columns(3),
+
+                    ])->columnSpanFull(),
+
+                    Forms\Components\Group::make()
+                        ->schema([
+
+                        Forms\Components\Section::make('Rent Equipment:')
+                            ->schema([
+
+                            Forms\Components\Select::make('equipment_id')
+                                 ->label('Equipment')
+                                 ->options(
+                                    $equipments->mapWithKeys(function (Equipment $equipment) {
+                                        return [$equipment->id => sprintf('%s (stock %s)', $equipment->name, $equipment->quantity)];
+                                    })
+                                    )
+                                 ->reactive()
+                                 ->afterStateUpdated(fn ($state, Forms\Set $set)=>
+                                      $set('unit_price', Equipment::find($state)?->price ?? 0))
+                                 ->searchable(),
+                            Forms\Components\TextInput::make('quantity')
+                                 ->label('Quantity')
+                                 ->default(1)
+                                 ->live()
+                                 ->dehydrated()
+                                 ->numeric(),
+                            Forms\Components\TextInput::make('unit_price')
+                                 ->label('Unit Price')
+                                 ->numeric()
+                                 ->readOnly()
+                                 ->dehydrated(),
+                            Forms\Components\Placeholder::make('total_price')
+                                 ->label('Total Price:')
+                                 ->content(function ($get) {
+                                     $quantity = (float)$get('quantity');
+                                     $unit_price = (float)$get('unit_price');
+     
+                                     if ($quantity !== null && $unit_price !== null) {
+                                         return $quantity * $unit_price;
+                                     }
+                                     return 0;
+                                 }),  
                             ])->columns(2),
 
                     ])->columnSpanFull(),
-                    Forms\Components\Group::make()
-                        ->schema([
-
-                        Forms\Components\Section::make('Packages')
-                            ->schema([
-
-                                Forms\Components\Repeater::make('packageitems')
-                                    ->label('')
-                                    ->relationship()
-                                    ->schema([  
-
-                                    Forms\Components\Select::make('package_id')
-                                        ->label('Package')
-                                        ->options(Package::query()->pluck('name','id'))
-                                        ->reactive()
-                                        ->afterStateUpdated(fn ($state, Forms\Set $set)=>
-                                            $set('unit_price', Package::find($state)?->price ?? 0))
-                                        ->searchable()
-                                        ->nullable(),
-                                    Forms\Components\TextInput::make('quantity')
-                                        ->label('Quantity') 
-                                        ->default(1)
-                                        ->live()
-                                        ->dehydrated()
-                                        ->numeric(),
-                                    Forms\Components\TextInput::make('unit_price')
-                                        ->label('Unit Price')
-                                        ->numeric()
-                                        ->disabled()
-                                        ->dehydrated(),
-                                    Forms\Components\Placeholder::make('total_price')
-                                        ->label('Total Price')
-                                        ->content(function ($get) {
-                                            return $get('quantity') * $get('unit_price');}),      
-                                ])->columns(2),
-                            ])
-                        ]),
-
-                    Forms\Components\Group::make()
-                        ->schema([
-
-                        Forms\Components\Section::make('Custom Package')
-                            ->schema([
-                        
-                                Forms\Components\Repeater::make('items')
-                                    ->label('')
-                                    ->relationship()
-                                    ->schema([  
-
-                                    Forms\Components\Select::make('equipment_id')
-                                        ->label('Equipment')
-                                        ->options(Equipment::query()->pluck('name','id'))
-                                        ->reactive()
-                                        ->afterStateUpdated(fn ($state, Forms\Set $set)=>
-                                            $set('unit_price', Equipment::find($state)?->price ?? 0))
-                                        ->searchable(),
-                                    Forms\Components\TextInput::make('quantity')
-                                        ->label('Quantity')
-                                        ->default(1)
-                                        ->live()
-                                        ->dehydrated()
-                                        ->numeric(),
-                                    Forms\Components\TextInput::make('unit_price')
-                                        ->label('Unit Price')
-                                        ->numeric()
-                                        ->disabled()
-                                        ->dehydrated(),
-                                    Forms\Components\Placeholder::make('total_price')
-                                        ->label('Total Price')
-                                        ->content(function ($get) {
-                                            return $get('quantity') * $get('unit_price');}),      
-                            ])->columns(2),
-                        ])
-                    ]),
             ]);
+
     }
 
     public static function table(Table $table): Table
     {
         $user = auth()->user();
 
-    return $table
+        return $table
         ->modifyQueryUsing(function (Builder $query) use ($user) {
             if ($user && !$user->isAdmin()) {   
                 $query->where('user_id', $user->id);
             }
         })    
-            ->columns([
-                Tables\Columns\TextColumn::make('rent_number')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('user.name')
-                    ->label('Client Name')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('contact'),
-                Tables\Columns\TextColumn::make('address'),
-                Tables\Columns\TextColumn::make('status')
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state)
-                        {
-                        'pending' => 'warning',
-                        'approved' => 'success',
-                        'completed' => 'info',
-                        'cancelled' => 'danger',
-                        }),
-                Tables\Columns\TextColumn::make('date_of_delivery') 
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('date_of_pickup')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-            ])
+        ->columns([
+            Tables\Columns\ImageColumn::make('equipment.image')
+                ->label('')
+                ->size(80),
+            Tables\Columns\TextColumn::make('equipment.name')
+                ->searchable(),
+            Tables\Columns\TextColumn::make('rent_number')
+                ->searchable(),
+            Tables\Columns\TextColumn::make('user.name')
+                ->label('Client Name')
+                ->searchable(),
+            Tables\Columns\TextColumn::make('contact'),
+            Tables\Columns\TextColumn::make('address'),
+            Tables\Columns\TextColumn::make('status')
+                ->badge()
+                ->color(fn (string $state): string => match ($state)
+                    {
+                    'pending' => 'warning',
+                    'approved' => 'success',
+                    'rejected' => 'info',
+                    'cancelled' => 'danger',
+                    }),
+            Tables\Columns\TextColumn::make('date_of_delivery') 
+                ->searchable()
+                ->toggleable(isToggledHiddenByDefault: true),
+            Tables\Columns\TextColumn::make('date_of_pickup')
+                ->searchable()
+                ->toggleable(isToggledHiddenByDefault: true),
+            Tables\Columns\TextColumn::make('created_at')
+                ->dateTime()
+                ->sortable()
+                ->toggleable(isToggledHiddenByDefault: true),
+            Tables\Columns\TextColumn::make('updated_at')
+                ->dateTime()
+                ->sortable()
+                ->toggleable(isToggledHiddenByDefault: true),
+        ]) 
             ->filters([
                 //
             ])
             ->actions([
+                ViewAction::make(),
+
                 Tables\Actions\ActionGroup::make([
-                    ViewAction::make(),
                     EditAction::make(),
                     Action::make('Edit Status')
                             ->icon('heroicon-m-pencil-square')
@@ -256,7 +237,7 @@ class RentResource extends Resource
                                     $rentalStartDate = $rent->date_of_delivery;
                                     $daysDifference = $currentDate->diffInDays($rentalStartDate);
                             
-                                    if ($daysDifference >= 5) {
+                                    if ($daysDifference >= 1) {
                                         // Allow cancellation
                                         $rent->status = RentStatusEnum::CANCELLED->value;
                                         $rent->save();
@@ -291,6 +272,62 @@ class RentResource extends Resource
                 Tables\Actions\CreateAction::make(),
             ]);
     }
+
+    public static function infolist(Infolist $infolist): Infolist
+    {
+    return $infolist
+        ->schema([
+            Group::make()
+            ->schema([
+
+                 Section::make('Rent Details')
+                    ->schema([
+                    Grid::make(2)
+                        ->schema([
+                        TextEntry::make('rent_number')
+                            ->label('Rent Number:')
+                            ->badge()
+                            ->color('success'),
+                        TextEntry::make('address')
+                            ->label('Address:'),
+                        TextEntry::make('user.name')
+                            ->label('Client Name:'),
+                        TextEntry::make('contact')
+                            ->label('Contact Number:'),
+                        TextEntry::make('date_of_delivery')
+                            ->label('For delivery:')
+                            ->placeholder('Untitled'),
+                        TextEntry::make('date_of_pickup')
+                            ->label('For pick-up:'),
+                    ]),
+                ]),
+            ])->columnSpanFull(),
+
+            Group::make()
+            ->schema([
+
+                 Section::make('Equipment Details')
+                    ->schema([
+                    Grid::make(1)
+                        ->schema([
+                        
+                        ImageEntry::make('equipment.image')
+                            ->label(''),
+                        TextEntry::make('equipment.name')
+                            ->label('Name:'),
+                        TextEntry::make('unit_price')
+                            ->label('Unit Price:'),
+                        TextEntry::make('quantity')
+                            ->label('Qty:'),
+                        TextEntry::make('total_price')
+                            ->label('Total:'),
+                    
+                    ]),
+                ]),
+            ])->columnSpanFull(),
+
+        ]);
+}
     
     public static function getRelations(): array
     {
@@ -310,7 +347,7 @@ class RentResource extends Resource
     } 
     
     public static function getNavigationBadge(): ?string
-{
+    {
     $user = auth()->user();
 
     if ($user) {
@@ -322,6 +359,6 @@ class RentResource extends Resource
     }
 
     return null;
-}
-
+    }
+    
 }

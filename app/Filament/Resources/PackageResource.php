@@ -4,9 +4,11 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\PackageResource\Pages;
 use App\Filament\Resources\PackageResource\RelationManagers;
+use App\Models\Equipment;
 use App\Models\Package;
 use App\Models\Rent;
 use Filament\Forms;
+use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -16,6 +18,9 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\MarkdownEditor;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Support\Enums\FontWeight;
@@ -23,12 +28,6 @@ use Filament\Tables\Columns\Layout\Panel;
 use Filament\Tables\Columns\Layout\Split;
 use Filament\Tables\Columns\Layout\Stack;
 use Filament\Tables\Columns\ImageColumn;
-use Filament\Infolists\Infolist;
-use Filament\Infolists\Components\TextEntry;
-use Filament\Infolists\Components\Section;
-
-use Filament\Support\Colors\Color;
-use Filament\Support\Facades\FilamentColor;
 use IbrahimBougaoua\FilamentRatingStar\Actions\RatingStar;
 use IbrahimBougaoua\FilamentRatingStar\Columns\RatingStarColumn;
 
@@ -38,13 +37,14 @@ class PackageResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-briefcase';
 
-    protected static ?string $navigationGroup = 'Renting';
+    protected static ?string $navigationGroup = 'Inventory';
 
     public static function form(Form $form): Form
     {
+        $equipments = Equipment::get();
         return $form
             ->schema([
-
+            
                 Forms\Components\Group::make()
                     ->schema([
 
@@ -52,41 +52,7 @@ class PackageResource extends Resource
                             ->schema([
 
                                 Forms\Components\TextInput::make('name')
-                                    ->required()
-                                    ->maxLength(255),
-                                Forms\Components\TextInput::make('price')
-                                    ->label('Original Cost')
-                                    ->required()
-                                    ->numeric()
-                                    ->prefix('₱'),
-                                Forms\Components\MarkdownEditor::make('description'),
-                                //RatingStar::make('rating')
-                                    //->label('Rating')
-
-                            ])->columns(2),
-
-                    ])->columnSpanFull(),
-
-                Forms\Components\Group::make()
-                    ->schema([
-
-                        Forms\Components\Section::make('Insert Image')
-                            ->schema([  
-
-                           Forms\Components\FileUpload::make('image')
-                               ->image()
-                               ->preserveFilenames()
-                               ->openable(),
-     
-                   ])->collapsible()
-                 ]),   
-
-                Forms\Components\Group::make()
-                    ->schema([
-
-                        Forms\Components\Section::make('Status')
-                            ->schema([  
-
+                                    ->required(),
                                 Forms\Components\Select::make('status')
                                     ->label('Availability')
                                     ->options([
@@ -94,12 +60,110 @@ class PackageResource extends Resource
                                         'unavailable' => 'Unvailable',
                                     ])
                                     ->required(),
-             
-                            ])->columns(2)
-                         ]),
-                
-                ]); 
+                                Forms\Components\MarkdownEditor::make('description'),
+                                Forms\Components\FileUpload::make('image')
+                                    ->image()
+                                    ->preserveFilenames()
+                                    ->openable(),
+                                //RatingStar::make('rating')
+                                    //->label('Rating')
 
+                            ])->columns(1)
+                    ]),
+
+                Forms\Components\Group::make()
+                    ->schema([
+                        Section::make('Equipments')
+                        ->schema([
+                            
+                            Forms\Components\Repeater::make('items')
+                            ->relationship()
+                            ->schema([
+
+                            Forms\Components\Select::make('equipment_id')
+                                ->label('Equipment')
+                                ->options(Equipment::query()->pluck('name','id'))
+                                ->searchable()
+                                ->reactive()
+                                ->afterStateUpdated(fn ($state, Forms\Set $set)=>
+                                      $set('unit_price', Equipment::find($state)?->price ?? 0))
+                                ->disableOptionWhen(function ($value, $state, Get $get) {
+                                    return collect($get('../*.equipment_id'))
+                                        ->reject(fn($id) => $id == $state)
+                                        ->filter()
+                                        ->contains($value);
+                                })
+                                ->required(),
+                            Forms\Components\TextInput::make('unit_price')
+                                ->label('Unit Price')
+                                ->numeric()
+                                ->disabled()
+                                ->dehydrated(),
+                            Forms\Components\TextInput::make('quantity')
+                                ->integer()
+                                ->default(1)
+                                ->required()
+                                ->live()
+                                ->dehydrated(),
+                            Forms\Components\Placeholder::make('total_price')
+                                ->label('Total Price')
+                                ->content(function ($get) {
+                                    $quantity = (float)$get('quantity');
+                                    $unit_price = (float)$get('unit_price');
+    
+                                    if ($quantity !== null && $unit_price !== null) {
+                                        return $quantity * $unit_price;
+                                    }
+                                    return 0;
+                                }),      
+                        ])
+                        ->afterStateUpdated(function (Get $get, Set $set) {
+                            self::updateTotals($get, $set);
+                        })
+                        ->deleteAction(
+                            fn(Action $action) => $action->after(fn(Get $get, Set $set) => self::updateTotals($get, $set)),
+                        )
+                        ->reorderable(false)
+                        ->columns(2),
+                        
+                        ]),
+
+                        Forms\Components\Group::make()
+                            ->schema([
+                
+                            Section::make('Total')
+                                ->schema([
+                                
+                             Forms\Components\TextInput::make('price')
+                                    ->numeric()
+                                    ->disabled()
+                                    ->prefix('$')
+                                    ->afterStateHydrated(function (Get $get, Set $set) {
+                                        self::updateTotals($get, $set);
+                                    }),
+                    ]),
+                ]),  
+                    ]),
+                
+            ]);
+            
+    }
+
+    public static function updateTotals(Get $get, Set $set): void
+    {
+    // Retrieve all selected products and remove empty rows
+    $selectedEquipments = collect($get('items'))->filter(fn($item) => !empty($item['equipment_id']) && !empty($item['quantity']));
+ 
+    // Retrieve prices for all selected products
+    $prices = Equipment::find($selectedEquipments->pluck('equipment_id'))->pluck('price', 'id');
+ 
+    // Calculate subtotal based on the selected products and quantities
+    $subtotal = $selectedEquipments->reduce(function ($subtotal, $equipment) use ($prices) {
+        return $subtotal + ($prices[$equipment['equipment_id']] * $equipment['quantity']);
+    }, 0);
+ 
+    // Update the state with the new values
+    $set('subtotal', number_format($subtotal, 2, '.', ''));
     }
 
     public static function table(Table $table): Table
@@ -113,7 +177,8 @@ class PackageResource extends Resource
 
                 Split::make([
                     ImageColumn::make('image')
-                        ->size(100),
+                        ->size(100)
+                        ->stacked(),
                     TextColumn::make('name')
                         ->weight(FontWeight::Bold)
                         ->searchable()
@@ -129,7 +194,7 @@ class PackageResource extends Resource
                         TextColumn::make('price')
                             ->prefix('₱')
                             ->sortable(),
-                        RatingStarColumn::make('rating')
+                       // RatingStarColumn::make('rating')
                     ])
                     
                 ]), 

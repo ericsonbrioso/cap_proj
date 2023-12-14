@@ -11,7 +11,7 @@ class CreateType extends CreateRecord
     protected static string $resource = TypeResource::class;
 
     protected function getRedirectUrl(): string
-    {
+    {   
         return $this->getResource()::getUrl('index');
     }
 }

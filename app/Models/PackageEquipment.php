@@ -5,20 +5,20 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class RentPackage extends Model
+class PackageEquipment extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'rent_id',
         'package_id',
+        'equipment_id',
         'unit_price',
         'quantity',
         
     ];
     
-    public function rent()
-    {
-        return $this->belongsTo(Rent::class);
-    }
+    public function package()
+    {   
+        return $this->belongsTo(Package::class);
+    }  
 }
