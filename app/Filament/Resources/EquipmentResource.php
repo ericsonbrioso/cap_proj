@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\EquipmentResource\Pages;
 use App\Filament\Resources\EquipmentResource\RelationManagers;
+use App\Filament\Resources\EquipmentResource\RelationManagers\RentRelationManager;
 use App\Models\Equipment;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -15,18 +16,25 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Models\Type;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\MarkdownEditor;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Radio;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Support\Enums\FontWeight;
 use Filament\Tables\Columns\Layout\Panel;
-use Filament\Tables\Columns\Layout\Split;
 use Filament\Tables\Columns\Layout\Stack;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Actions\ActionGroup;
+use Filament\Infolists\Components\Grid;
+use Filament\Infolists\Components\Group;
+use Filament\Infolists\Components\ImageEntry;
+use Filament\Infolists\Components\Section;
+use Filament\Infolists\Components\Split;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Infolist;
 use Filament\Tables\Actions\DeleteAction;
 use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Actions\ViewAction;
+use Filament\Tables\Columns\Layout\Split as LayoutSplit;
 
 class EquipmentResource extends Resource
 {
@@ -40,11 +48,8 @@ class EquipmentResource extends Resource
     {
         return $form
             ->schema([
-
-                Forms\Components\Group::make()
-                    ->schema([
-
-                        Forms\Components\Section::make()
+                
+                        Forms\Components\Section::make('Equipment Details')
                             ->schema([
 
                                 Forms\Components\TextInput::make('name')
@@ -57,17 +62,17 @@ class EquipmentResource extends Resource
                                     ->required()
                                     ->searchable()
                                     ->preload(),
-                                Forms\Components\MarkdownEditor::make('description')
+                                Forms\Components\Textarea::make('description')
                                     ->columnSpan('full'),
-
+                                
                             ])->columns(2),
-
-                        
+                    Forms\Components\Group::make()
+                            ->schema([
                         Forms\Components\Section::make()
-                            ->schema([  
+                            ->schema([
 
                                 Forms\Components\TextInput::make('price')
-                                    ->label('Original Cost')
+                                    ->label('Unit Price')
                                     ->required()
                                     ->numeric()
                                     ->prefix('₱'),
@@ -75,64 +80,58 @@ class EquipmentResource extends Resource
                                     ->label('Stocks')
                                     ->required()
                                     ->numeric(),
-
-                            ])->columns(2)
-                    ]),
-
-                Forms\Components\Group::make()
-                    ->schema([
-
-                        Forms\Components\Section::make('Status')
-                            ->schema([  
-
-                                Forms\Components\Radio::make('condition')  
-                                    ->label('Cuurent Condition')    
+                                Forms\Components\TextInput::make('days')
+                                    ->label('Days')
                                     ->required()
-                                    ->options([
-                                        'good' => 'Good',
-                                        'fair' => 'Fair',
-                                        'poor' => 'Poor',
-                                ]),
-
+                                    ->numeric(),
+        
                                 Forms\Components\Select::make('status')
                                     ->label('Availability')
-                                    ->options([
+                                     ->options([
                                         'available' => 'Available',
                                         'unavailable' => 'Unvailable',
-                                    ]),
-             
-                         ])->columns(2),
+                                    ]), 
+                                
+                            ]),
+                        ]),
 
-                        Forms\Components\Section::make('Insert Image')
-                            ->schema([  
+                    Forms\Components\Group::make()
+                            ->schema([
+                        Forms\Components\Section::make()
+                            ->schema([
 
                                 Forms\Components\FileUpload::make('image')
                                     ->image()
-                                    ->preserveFilenames(),
-          
-                        ])->collapsible()
-                    ])
-                ]); 
+                                    ->preserveFilenames(),        
 
+                            ])
+                        ]),
+                ]);
     }
     public static function table(Table $table): Table
     {
         return $table
         ->contentGrid([
             'md' => 2,
-            'xl' => 3,
+            'xl' => 2,
         ])
         ->columns([
             
-            Split::make([
+            LayoutSplit::make([
                 ImageColumn::make('image')
-                    ->size(100)
-                    ->stacked(),
+                    ->size(150),
+
+                Stack::make([
+
                 TextColumn::make('name')
                     ->weight(FontWeight::Bold)
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('description'),   
+                    ]),
+
                 Stack::make([
+
                     TextColumn::make('status')
                         ->badge()
                         ->color(fn (string $state): string => match ($state)
@@ -141,6 +140,7 @@ class EquipmentResource extends Resource
                         'unavailable' => 'warning',
                         }),
                     TextColumn::make('price')
+                        ->label('Rate Per day')
                         ->prefix('₱')
                         ->sortable(),
                    // RatingStarColumn::make('rating')
@@ -167,10 +167,53 @@ class EquipmentResource extends Resource
             ]);
     }
     
+    public static function infolist(Infolist $infolist): Infolist
+    {
+    return $infolist
+        ->schema([
+                Section::make('Equipment Details')
+                    ->schema([
+                    Split::make([
+                        Grid::make(3)
+                            ->schema([
+                            Group::make([
+                                TextEntry::make('name')
+                                    ->label('Equipment Name:')
+                                    ->weight(FontWeight::Bold),
+                                ImageEntry::make('image')
+                                    ->label(''),
+                            ]),
+
+                            Group::make([
+                                TextEntry::make('type.name')
+                                    ->label('Type:'),
+                                TextEntry::make('description')
+                                    ->label('Description:'),
+                                TextEntry::make('status')
+                                    ->label('Status:')
+                                    ->badge()
+                                    ->color('success'),
+                            ]),
+
+                            Group::make([
+                                TextEntry::make('price')
+                                    ->label('Unit Price:'),
+                                TextEntry::make('quantity')
+                                    ->label('Stocks:'),
+                                
+                            ])
+                                
+                        ]),
+                    ])
+                    
+                ]),
+        ]);
+}
+
     public static function getRelations(): array
     {
         return [
-            //
+            RentRelationManager::class,
         ];
     }
     

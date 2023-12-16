@@ -37,7 +37,7 @@ class RentPolicy
      */
     public function update(User $user, Rent $rent): bool
     {
-        return $user->isUser();
+        return $user->isAdmin() || $user->isUser();
     }
 
     /**

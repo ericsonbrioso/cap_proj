@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\TypeResource\Pages;
+use App\Filament\Resources\TypeResource\RelationManagers\EquipmentRelationManager;
 use App\Models\Type;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -95,7 +96,7 @@ class TypeResource extends Resource
     public static function getRelations(): array
     {
         return [
-
+            EquipmentRelationManager::class,
         ];
     }
     

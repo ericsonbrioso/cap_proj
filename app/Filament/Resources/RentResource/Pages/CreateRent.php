@@ -10,8 +10,4 @@ class CreateRent extends CreateRecord
 {
     protected static string $resource = RentResource::class;
     
-    protected function getRedirectUrl(): string
-    {   
-        return $this->getResource()::getUrl('index');
-    }
 }

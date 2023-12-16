@@ -19,13 +19,17 @@ return new class extends Migration
             $table->integer('quantity');
             $table->decimal('unit_price', 10 ,2)->nullable();
             $table->decimal('total_price', 10 ,2)->nullable();
+            $table->decimal('delivery_fee', 10 ,2);
             $table->string('address');
             $table->string('contact');
+            $table->string('type');
             $table->dateTime('date_of_pickup');
             $table->dateTime('date_of_delivery')->nullable();
-            $table->enum('status',['pending','approved','rejected','cancelled'])->default('pending');
+            $table->string('status')->default('pending');
             $table->softDeletes();
             $table->timestamps();
+            $table->integer('rating')->nullable();
+            $table->string('comment')->nullable();
         });
     }
 

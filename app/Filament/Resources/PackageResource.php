@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\MarkdownEditor;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
@@ -60,15 +60,17 @@ class PackageResource extends Resource
                                         'unavailable' => 'Unvailable',
                                     ])
                                     ->required(),
-                                Forms\Components\MarkdownEditor::make('description'),
+                                Forms\Components\Textarea::make('description')
+                                    ->columnSpan('full'),
                                 Forms\Components\FileUpload::make('image')
                                     ->image()
                                     ->preserveFilenames()
-                                    ->openable(),
+                                    ->openable()
+                                    ->columnSpan('full'),
                                 //RatingStar::make('rating')
                                     //->label('Rating')
 
-                            ])->columns(1)
+                            ])->columns(2)
                     ]),
 
                 Forms\Components\Group::make()
@@ -171,19 +173,28 @@ class PackageResource extends Resource
         return $table
         ->contentGrid([
             'md' => 2,
-            'xl' => 3,
+            'xl' => 2,
         ])
         ->columns([
 
                 Split::make([
                     ImageColumn::make('image')
-                        ->size(100)
+                        ->size(150)
                         ->stacked(),
+                    Stack::make([
+
                     TextColumn::make('name')
                         ->weight(FontWeight::Bold)
                         ->searchable()
                         ->sortable(),
+                    TextColumn::make('description'),
+
+                    ]),
                     Stack::make([
+                        
+                        TextColumn::make('price')
+                            ->prefix('₱')
+                            ->sortable(),
                         TextColumn::make('status')
                             ->badge()
                             ->color(fn (string $state): string => match ($state)
@@ -191,9 +202,6 @@ class PackageResource extends Resource
                             'available' => 'success',
                             'unavailable' => 'warning',
                             }),
-                        TextColumn::make('price')
-                            ->prefix('₱')
-                            ->sortable(),
                        // RatingStarColumn::make('rating')
                     ])
                     

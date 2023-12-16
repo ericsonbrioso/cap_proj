@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('description')->nullable();
             $table->string('image')->nullable();
             $table->decimal('price', 8, 2);
-            $table->string('condition');
+            $table->integer('days');
             $table->string('status');
             $table->integer('quantity');
             $table->timestamps();

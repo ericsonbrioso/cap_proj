@@ -21,11 +21,28 @@ class Rent extends Model
         'total_price',
         'date_of_pickup',
         'date_of_delivery',
-        'status', 
+        'status',
+        'type',
+        'delivery_fee',
+        'rating',
+        'comment',
 
     ];
 
+    public static function boot()
+    {
+        parent::boot();
 
+        static::saving(function ($rent) {
+        
+            $quantity = (float) $rent->quantity;
+            $unitPrice = (float) $rent->unit_price;
+
+            if (!is_null($quantity) && !is_null($unitPrice)) {
+                $rent->total_price = $quantity * $unitPrice;
+            }
+        });
+    }
 
     public function user()
     {

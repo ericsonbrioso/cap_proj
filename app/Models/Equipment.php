@@ -16,7 +16,7 @@ class Equipment extends Model
         'description',
         'image',
         'price',
-        'condition', 
+        'days', 
         'status',
         'quantity',
         
@@ -27,4 +27,8 @@ class Equipment extends Model
         return $this->belongsTo(Type::class);
     }
     
+    public function rent()
+        {
+            return $this->hasMany(Rent::class);
+        }
 }

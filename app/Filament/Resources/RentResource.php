@@ -33,18 +33,20 @@ use Filament\Infolists\Infolist;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\Section;
+use Filament\Infolists\Components\Split;
 use Filament\Notifications\Notification;
 use Filament\Support\Enums\FontWeight;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\ImageColumn;
-use Filament\Tables\Columns\Layout\Split;
 use Filament\Tables\Columns\Layout\Stack;
 use Filament\Tables\Columns\Layout\Panel;
 use Filament\Tables\Columns\TextColumn;
 use Illuminate\Database\Eloquent\Collection;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 use Ysfkaya\FilamentPhoneInput\Tables\PhoneInputColumn;
-
+use Filament\Tables\Columns\Summarizers\Sum;
+use IbrahimBougaoua\FilamentRatingStar\Actions\RatingStar;
+use IbrahimBougaoua\FilamentRatingStar\Columns\RatingStarColumn;
 
 
 class RentResource extends Resource
@@ -64,55 +66,41 @@ class RentResource extends Resource
             
             ->schema([
 
-                Forms\Components\Group::make()
-                    ->schema([
-
-                        Forms\Components\Section::make()
-                            ->schema([
-
+                Wizard::make([
+                    Wizard\Step::make('Client Details')
+                        ->schema([
+                   
                             Forms\Components\TextInput::make('rent_number')
                                 ->label('Rent Number')
                                 ->default('RN-'. random_int(100000, 999999))
-                                ->disabled()
+                                ->readOnly()
                                 ->dehydrated()
                                 ->required(),
                             Forms\Components\Hidden::make('user_id')
                                 ->default(auth()->check() ? auth()->user()->id : null)
                                 ->required(),
-                            PhoneInput::make('contact')
-                                ->disallowDropdown()
-                                ->required()
-                                ->defaultCountry('Philippines'),
                             Forms\Components\TextInput::make('address')
                                 ->label('Complete Address')
                                 ->required()
-                                ->maxLength(255),
-                            Forms\Components\DateTimePicker::make('date_of_delivery')
-                                ->label('Set Delivery Date:')
-                                ->suffixIcon('heroicon-m-calendar-days')
-                                ->prefix('Start')
-                                ->seconds(false)
-                                ->native(false)
-                                ->minDate(now()->subHours(14)),
-                            Forms\Components\DateTimePicker::make('date_of_pickup')->after('date_of_delivery')
-                                ->label('Set Date of Pick-up:')
-                                ->suffixIcon('heroicon-m-calendar-days') 
-                                ->prefix('End')  
+                                ->maxLength(255)
+                                ->default(auth()->check() ? auth()->user()->address : null)
+                                ->readOnly(),
+                            PhoneInput::make('contact')
                                 ->required()
-                                ->seconds(false)
-                                ->native(false)
-                                ->minDate(now()),
-                            
+                                ->disallowDropdown()
+                                ->defaultCountry('Philippines')
+                                ->default(auth()->check() ? auth()->user()->contact : null),
+                            Forms\Components\Select::make('type')
+                                ->label('Choose Type')
+                                ->options([
+                                    'pickup' => 'Pickup',
+                                    'delivery' => 'Delivery',
+                                ])
+                                ->required(),
+                            ])->columns(1),
 
-                        ])->columns(3),
-
-                    ])->columnSpanFull(),
-
-                    Forms\Components\Group::make()
+                    Wizard\Step::make('Choose Equipment')
                         ->schema([
-
-                        Forms\Components\Section::make('Rent Equipment:')
-                            ->schema([
 
                             Forms\Components\Select::make('equipment_id')
                                  ->label('Equipment')
@@ -135,7 +123,8 @@ class RentResource extends Resource
                                  ->label('Unit Price')
                                  ->numeric()
                                  ->readOnly()
-                                 ->dehydrated(),
+                                 ->dehydrated()
+                                 ->prefix('₱'),
                             Forms\Components\Placeholder::make('total_price')
                                  ->label('Total Price:')
                                  ->content(function ($get) {
@@ -147,9 +136,41 @@ class RentResource extends Resource
                                      }
                                      return 0;
                                  }),  
-                            ])->columns(2),
+                        ]),
+                    Wizard\Step::make('Duration')
+                        ->schema([
 
-                    ])->columnSpanFull(),
+                        Forms\Components\DateTimePicker::make('date_of_delivery')
+                            ->label('Scheduled for Rental')
+                            ->suffixIcon('heroicon-m-calendar-days')
+                            ->prefix('Start')
+                            ->required()
+                            ->seconds(false)
+                            ->native(false)
+                            ->minDate(now()->subHours(14))
+                            ->hint(str('To be delivered')->inlineMarkdown()->toHtmlString())
+                            ->hintIcon('heroicon-m-question-mark-circle'),
+                        Forms\Components\DateTimePicker::make('date_of_pickup')->after('date_of_delivery')
+                            ->label('End of Rental')
+                            ->suffixIcon('heroicon-m-calendar-days') 
+                            ->prefix('End')  
+                            ->required()
+                            ->seconds(false)
+                            ->native(false)
+                            ->minDate(now()),
+                        Forms\Components\TextInput::make('delivery_fee')
+                            ->label('Transportation Fee')
+                            ->numeric()
+                            ->readOnly(fn () => !auth()->user()->isAdmin())
+                            ->visible(true)
+                            ->hint(str('applied when 10km away from shop (only for delivery)')->inlineMarkdown()->toHtmlString())
+                            ->hintIcon('heroicon-m-question-mark-circle')
+                            ->default(00.00)
+                            ->prefix('₱')
+                            ->suffixIcon('heroicon-m-truck'),
+
+                        ]),
+                ])->columnSpanFull()
             ]);
 
     }
@@ -170,13 +191,24 @@ class RentResource extends Resource
                 ->size(80),
             Tables\Columns\TextColumn::make('equipment.name')
                 ->searchable(),
+            Tables\Columns\TextColumn::make('type')
+                ->badge()
+                ->searchable()
+                ->color(fn (string $state): string => match ($state)
+                {
+                'delivery' => 'info',
+                'pickup' => 'info',
+                }),
             Tables\Columns\TextColumn::make('rent_number')
+                ->label('RN#')
                 ->searchable(),
-            Tables\Columns\TextColumn::make('user.name')
-                ->label('Client Name')
-                ->searchable(),
-            Tables\Columns\TextColumn::make('contact'),
-            Tables\Columns\TextColumn::make('address'),
+            Tables\Columns\TextColumn::make('quantity')
+                ->prefix('Qty. '),
+            Tables\Columns\TextColumn::make('unit_price')
+                ->prefix('₱ '),
+            Tables\Columns\TextColumn::make('total_price')
+                ->summarize(Sum::make()->money('PESO'))
+                ->prefix('₱ '),
             Tables\Columns\TextColumn::make('status')
                 ->badge()
                 ->color(fn (string $state): string => match ($state)
@@ -184,14 +216,17 @@ class RentResource extends Resource
                     'pending' => 'warning',
                     'approved' => 'success',
                     'rejected' => 'info',
+                    'for-delivery' => 'success',
+                    'for-pickup' => 'success',
+                    'completed' => 'success',
                     'cancelled' => 'danger',
                     }),
             Tables\Columns\TextColumn::make('date_of_delivery') 
-                ->searchable()
-                ->toggleable(isToggledHiddenByDefault: true),
+                ->label('Start of Rental')
+                ->searchable(),
             Tables\Columns\TextColumn::make('date_of_pickup')
-                ->searchable()
-                ->toggleable(isToggledHiddenByDefault: true),
+                ->label('End of Rental')
+                ->searchable(),
             Tables\Columns\TextColumn::make('created_at')
                 ->dateTime()
                 ->sortable()
@@ -205,16 +240,18 @@ class RentResource extends Resource
                 //
             ])
             ->actions([
-                ViewAction::make(),
-
+            
                 Tables\Actions\ActionGroup::make([
-                    EditAction::make(),
+                    ViewAction::make(),
                     Action::make('Edit Status')
                             ->icon('heroicon-m-pencil-square')
                             ->form([
                             Forms\Components\Select::make('status')
                                 ->label('Status')
-                                ->options(RentStatusEnum::class)
+                                ->options([
+                                    'approved' => 'Approved',
+                                    'rejected' => 'Rejected',
+                                ])
                             ])
                                 ->action(function (Rent $rent, array $data): void {
                                     $rent->status = $data['status'];
@@ -226,7 +263,61 @@ class RentResource extends Resource
                                         ->success()
                                         ->send();
                                 })
-                                ->visible(fn ($data) => auth()->user()->isAdmin()),
+                                ->visible(fn ($record) => $record->status === 'pending' && auth()->user()->isAdmin()),
+
+                            Action::make('Delivery Status')
+                                ->icon('heroicon-m-pencil-square')
+                                ->form([
+                                Forms\Components\Select::make('status')
+                                    ->label('Status')
+                                    ->options([
+                                        'for-delivery' => 'For-delivery',
+                                        'for-pickup' => 'For-pickup',
+                                    ])
+                                ])
+                                    ->action(function (Rent $rent, array $data): void {
+                                        $rent->status = $data['status'];
+                                        $rent->save();
+    
+                                        Notification::make()
+                                            ->title('Status Updated')
+                                            ->duration(3000)
+                                            ->success()
+                                            ->send();
+                                    })
+                                    ->visible(fn ($record) => $record->status === 'approved' && auth()->user()->isAdmin()),
+                            
+                            Action::make('For Pickup')
+                                    ->icon('heroicon-m-truck')
+                                    ->color('warning')
+                                    ->action(function (Rent $rent, array $data): void {
+                                            $rent->status = 'for-pickup';
+                                            $rent->save();
+                                            $rent->save();
+        
+                                            Notification::make()
+                                                ->title('Out for pickup')
+                                                ->duration(3000)
+                                                ->success()
+                                                ->send();
+                                        })
+                                        ->visible(fn ($record) => $record->status === 'for-delivery' && auth()->user()->isAdmin()),
+                            
+                            Action::make('Completed')
+                                    ->icon('heroicon-m-check-circle')
+                                    ->color('success')
+                                    ->action(function (Rent $rent, array $data): void {
+                                            $rent->status = 'completed';
+                                            $rent->save();
+                                            $rent->save();
+        
+                                            Notification::make()
+                                                ->title('Rent Completed')
+                                                ->duration(3000)
+                                                ->success()
+                                                ->send();
+                                        })
+                                        ->visible(fn ($record) => $record->status === 'for-pickup' && auth()->user()->isAdmin()),
 
                             Action::make('Cancel Rent')
                                 ->icon('heroicon-m-trash')
@@ -239,7 +330,7 @@ class RentResource extends Resource
                             
                                     if ($daysDifference >= 1) {
                                         // Allow cancellation
-                                        $rent->status = RentStatusEnum::CANCELLED->value;
+                                        $rent->status = 'cancelled';
                                         $rent->save();
                             
                                         Notification::make()
@@ -258,8 +349,33 @@ class RentResource extends Resource
                                             ->send();
                                     }
                                 })
-                                ->visible(fn ($data) => auth()->user() && !auth()->user()->isAdmin()),
+                                ->visible(fn ($record) => $record->status === 'pending' && auth()->user() && !auth()->user()->isAdmin()),
                             
+                            Action::make('To Review')
+                                ->icon('heroicon-m-star')
+                                ->color('warning')
+                                ->form([
+
+                                    RatingStar::make('rating')
+                                        ->label('Rating'),
+                                    Forms\Components\Textarea::make('comment')
+                                        ->label('Comment'),
+                                ])
+                                ->visible(fn ($record) => $record->status === 'completed' && auth()->user() && !auth()->user()->isAdmin())
+                                ->action(function (Rent $rent, array $data): void {
+                               
+                                    $rent->update([
+                                        'rating' => $data['rating'],
+                                        'comment' => $data['comment'],
+                                    ]);
+                            
+                                    Notification::make()
+                                        ->title('Review Submitted')
+                                        ->duration(3000)
+                                        ->success()
+                                        ->send();
+                                })
+                                
                 ])
                 
             ])
@@ -277,10 +393,7 @@ class RentResource extends Resource
     {
     return $infolist
         ->schema([
-            Group::make()
-            ->schema([
-
-                 Section::make('Rent Details')
+                Section::make('Rent Details')
                     ->schema([
                     Grid::make(2)
                         ->schema([
@@ -288,42 +401,66 @@ class RentResource extends Resource
                             ->label('Rent Number:')
                             ->badge()
                             ->color('success'),
-                        TextEntry::make('address')
-                            ->label('Address:'),
                         TextEntry::make('user.name')
-                            ->label('Client Name:'),
+                            ->label('Client Name:')
+                            ->icon('heroicon-m-user'),
                         TextEntry::make('contact')
-                            ->label('Contact Number:'),
+                            ->label('Contact Number:')
+                            ->icon('heroicon-m-phone'),
                         TextEntry::make('date_of_delivery')
-                            ->label('For delivery:')
-                            ->placeholder('Untitled'),
+                            ->label('Start of rental: (sheduled for delivery on/before the said date)')
+                            ->icon('heroicon-m-truck'),
+                        TextEntry::make('address')
+                            ->label('Address:')
+                            ->icon('heroicon-m-map-pin'),
                         TextEntry::make('date_of_pickup')
-                            ->label('For pick-up:'),
+                            ->label('End of rental: (retrieval of equipments)')
+                            ->icon('heroicon-m-truck'),
                     ]),
                 ]),
-            ])->columnSpanFull(),
+       
 
             Group::make()
             ->schema([
 
                  Section::make('Equipment Details')
                     ->schema([
-                    Grid::make(1)
-                        ->schema([
+                    Split::make([
+                        Grid::make(3)
+                            ->schema([
+                        Group::make([
+                            
+                            TextEntry::make('equipment.name')
+                                ->weight(FontWeight::Bold)
+                                ->label('Equipment Name:'),
+                            ImageEntry::make('equipment.image')
+                                ->hiddenlabel(),
+                        ]),
                         
-                        ImageEntry::make('equipment.image')
-                            ->label(''),
-                        TextEntry::make('equipment.name')
-                            ->label('Name:'),
-                        TextEntry::make('unit_price')
-                            ->label('Unit Price:'),
-                        TextEntry::make('quantity')
-                            ->label('Qty:'),
-                        TextEntry::make('total_price')
-                            ->label('Total:'),
-                    
+                        Group::make([
+                            TextEntry::make('unit_price')
+                                ->label('Unit Price:')
+                                ->prefix('₱ '),
+                            TextEntry::make('quantity')
+                                ->label('Quantity:')
+                                ->prefix(''),
+                            TextEntry::make('total_price')
+                                ->label('Total Amount: (Per Day)')
+                                ->prefix('₱ ')
+                                ->badge()
+                                ->color('warning'),
+                        ]),
+
+                        Group::make([
+                            TextEntry::make('delivery_fee')
+                                ->label('Transportation Fee:')
+                                ->prefix('₱ '),
+                           
+                        ])
                     ]),
-                ]),
+                                ])
+                    
+                        ]),
             ])->columnSpanFull(),
 
         ]);

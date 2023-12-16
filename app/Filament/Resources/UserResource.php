@@ -13,33 +13,53 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Forms\Components\Radio;
-
+use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
+use Ysfkaya\FilamentPhoneInput\Tables\PhoneInputColumn;
+use Illuminate\Support\Facades\Auth;
 
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-user-group';
+    protected static ?string $navigationIcon = 'heroicon-o-users';
 
-    protected static ?string $navigationLabel = 'Clients';
+    protected static ?string $navigationLabel = 'User';
 
-    protected static ?string $navigationGroup = 'User Management';
+    protected static ?string $navigationGroup = 'Account';
 
     public static function form(Form $form): Form
     {
+        $user = Auth::user();
+
         return $form
             ->schema([
-                Forms\Components\TextInput::make('name')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('email')
-                    ->email()
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('password')
-                    ->password()
-                    ->required()
-                    ->maxLength(255),
+                Forms\Components\Group::make()
+                    ->schema([
+                    
+                    Forms\Components\Section::make()
+                        ->schema([
+
+                        Forms\Components\TextInput::make('name')
+                            ->required()
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('email')
+                            ->email()
+                            ->required()
+                            ->maxLength(255),
+                        PhoneInput::make('contact')
+                            ->disallowDropdown()
+                            ->required()
+                            ->defaultCountry('Philippines'),
+                        Forms\Components\TextInput::make('address')
+                            ->label('Complete Address')
+                            ->required()
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('password')
+                            ->password()
+                            ->required()
+                            ->maxLength(255),
+                    ])->columns(2),
+                ])->columnSpanFull()
             ]);
     }
 
@@ -91,13 +111,27 @@ class UserResource extends Resource
     }   
     
     public static function getEloquentQuery(): Builder
-    {
-        return parent::getEloquentQuery()->where('role', '=', 'user');
+{
+    $user = auth()->user();
+
+    $query = parent::getEloquentQuery();
+
+    if ($user && $user->role === 'admin') {
+        return $query;
+    }
+
+    return $query->where('id', $user->id);
     }
 
     public static function getNavigationBadge(): ?string
     {
-        $userCount = User::where('role', 'user')->count();
-        return $userCount > 0 ? (string)$userCount : null;
-    }
+        $user = Auth::user();
+    
+        if ($user && $user->role === 'admin') {
+            $userCount = User::where('role', 'user')->count();
+            return $userCount > 0 ? (string)$userCount : null;
+        }
+    
+        return null;    
+    }   
 }
