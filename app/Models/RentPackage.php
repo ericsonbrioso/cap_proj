@@ -4,16 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Rent extends Model
+class RentPackage extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
 
     protected $fillable = [
         'rent_number',
         'user_id',
-        'equipment_id',
+        'package_id',
         'address',
         'contact',
         'quantity',
@@ -54,8 +53,8 @@ class Rent extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function equipment()
+    public function package()
     {
-        return $this->belongsTo(Equipment::class);
+        return $this->belongsTo(Package::class);
     }
 }

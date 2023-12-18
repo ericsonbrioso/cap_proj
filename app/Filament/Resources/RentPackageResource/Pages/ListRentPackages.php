@@ -1,19 +1,19 @@
 <?php
 
-namespace App\Filament\Resources\RentResource\Pages;
+namespace App\Filament\Resources\RentPackageResource\Pages;
 
-use App\Filament\Resources\RentResource;
+use App\Filament\Resources\RentPackageResource;
+use App\Models\RentPackage;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
-use App\Models\Rent;
 use Filament\Actions\Action;
 use Filament\Resources\Components\Tab;
 use Filament\Resources\Pages\ListRecords\Tab as ListRecordsTab;
 use Illuminate\Support\Facades\Auth;
 
-class ListRents extends ListRecords
+class ListRentPackages extends ListRecords
 {
-    protected static string $resource = RentResource::class;
+    protected static string $resource = RentPackageResource::class;
 
     protected function getHeaderActions(): array
     {
@@ -30,13 +30,13 @@ class ListRents extends ListRecords
         $tabs = [];
 
         if ($isAdmin) {
-            $tabs['all'] = ListRecordsTab::make('All rents')->badge(Rent::count());
+            $tabs['all'] = ListRecordsTab::make('All rents')->badge(RentPackage::count());
 
             
             $statuses = ['pending', 'approved', 'rejected', 'for-delivery', 'for-pickup', 'completed', 'cancelled'];
 
             foreach ($statuses as $status) {
-                $statusCount = Rent::where('status', $status)->count();
+                $statusCount = RentPackage::where('status', $status)->count();
                 $tabs[$status] = ListRecordsTab::make(ucfirst($status))
                     ->badge($statusCount)
                     ->modifyQueryUsing(fn ($query) => $query->where('status', $status));
@@ -51,7 +51,7 @@ class ListRents extends ListRecords
             $statuses = ['pending', 'approved', 'rejected', 'for-delivery', 'for-pickup', 'completed', 'cancelled'];
 
             foreach ($statuses as $status) {
-                $statusCount = Rent::where('user_id', $user->id)
+                $statusCount = RentPackage::where('user_id', $user->id)
                     ->where('status', $status)
                     ->count();
 
@@ -66,3 +66,4 @@ class ListRents extends ListRecords
     }
     
 }
+

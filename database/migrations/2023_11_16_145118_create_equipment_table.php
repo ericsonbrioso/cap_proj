@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('equipment', function (Blueprint $table) {
             $table->id();
             $table->foreignId('type_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('rent_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->string('description')->nullable();
             $table->string('image')->nullable();

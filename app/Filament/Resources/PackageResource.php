@@ -4,9 +4,10 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\PackageResource\Pages;
 use App\Filament\Resources\PackageResource\RelationManagers;
+use App\Filament\Resources\PackageResource\RelationManagers\RentPackageRelationManager;
 use App\Models\Equipment;
 use App\Models\Package;
-use App\Models\Rent;
+use App\Models\RentPackage;
 use Filament\Forms;
 use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Form;
@@ -228,7 +229,7 @@ class PackageResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            RentPackageRelationManager::class,
         ];
     }
     

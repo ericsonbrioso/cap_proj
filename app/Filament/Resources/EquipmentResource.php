@@ -181,7 +181,8 @@ class EquipmentResource extends Resource
                                     ->label('Equipment Name:')
                                     ->weight(FontWeight::Bold),
                                 ImageEntry::make('image')
-                                    ->label(''),
+                                    ->label('')
+                                    ->size(200),
                             ]),
 
                             Group::make([

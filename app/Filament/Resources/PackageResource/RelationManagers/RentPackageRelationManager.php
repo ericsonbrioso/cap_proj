@@ -1,12 +1,11 @@
 <?php
 
-namespace App\Filament\Resources\EquipmentResource\RelationManagers;
+namespace App\Filament\Resources\PackageResource\RelationManagers;
 
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
-use Filament\Tables\Columns\Layout\Panel;
 use Filament\Tables\Columns\Layout\Split;
 use Filament\Tables\Columns\Layout\Stack;
 use Filament\Tables\Table;
@@ -19,9 +18,9 @@ use Filament\Support\Enums\Alignment;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 
-class RentRelationManager extends RelationManager
+class RentPackageRelationManager extends RelationManager
 {
-    protected static string $relationship = 'Rent';
+    protected static string $relationship = 'RentPackage';
 
     protected static ?string $title = 'Ratings & Reviews';
 
@@ -29,7 +28,7 @@ class RentRelationManager extends RelationManager
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('rent_number')
+                Forms\Components\TextInput::make('user_id')
                     ->required()
                     ->maxLength(255),
             ]);
@@ -45,7 +44,7 @@ class RentRelationManager extends RelationManager
                 'xl' => 1,
             ])
             ->columns([
-                
+
                 Split::make([
                     Stack::make([
 
@@ -57,7 +56,7 @@ class RentRelationManager extends RelationManager
                             ->summarize(Average::make()->numeric(
                                 decimalPlaces: 1,
                                 decimalSeparator: '.',
-                        ))
+                        )) 
                             ->sortable(),
 
                         Tables\Columns\TextColumn::make('comment'),
@@ -66,6 +65,7 @@ class RentRelationManager extends RelationManager
                             ->limit(5)
                             ->stacked()
                             ->limitedRemainingText(isSeparate: true),
+
                     ])->space(3),
 
                         Tables\Columns\TextColumn::make('updated_at')
@@ -74,9 +74,9 @@ class RentRelationManager extends RelationManager
                             ->alignment(Alignment::End)
                             ->visibleFrom('md')
                             ->sortable(), 
+                        
                 ]),
-                
-                   
+
             ])
             ->filters([
                 SelectFilter::make('rating')
@@ -88,7 +88,6 @@ class RentRelationManager extends RelationManager
                             '4' => '4 Stars',
                             '5' => '5 Stars',
                         ]),
-                       
             ])
             ->headerActions([
                 Tables\Actions\CreateAction::make(),
@@ -106,5 +105,4 @@ class RentRelationManager extends RelationManager
                 Tables\Actions\CreateAction::make(),
             ]);
     }
-    
 }

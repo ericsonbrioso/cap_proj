@@ -28,7 +28,7 @@ class Package extends Model
     {
         return $this->hasMany(PackageEquipment::class);
     }
-
+    
     protected static function booted()
     {
         static::saving(function ($package) {
@@ -45,5 +45,10 @@ class Package extends Model
 
         // Update the model with the new subtotal
         $this->price = number_format($price, 2, '.', '');
+    }
+
+    public function rentpackage()
+    {
+            return $this->hasMany(RentPackage::class);
     }
 }

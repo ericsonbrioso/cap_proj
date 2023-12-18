@@ -11,10 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('rents', function (Blueprint $table) {
+        Schema::create('rent_packages', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('equipment_id')->nullable()->constrained()->cascadeOnDelete();
+            $table->foreignId('package_id')->nullable()->constrained()->cascadeOnDelete();
             $table->string('rent_number')->unique();
             $table->integer('quantity');
             $table->decimal('unit_price', 10 ,2)->nullable();
@@ -39,6 +39,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('rents');
+        Schema::dropIfExists('rent_packages');
     }
 };

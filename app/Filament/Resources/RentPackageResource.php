@@ -2,9 +2,9 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\RentResource\Pages;
-use App\Filament\Resources\RentResource\RelationManagers;
-use App\Models\Rent;
+use App\Filament\Resources\RentPackageResource\Pages;
+use App\Filament\Resources\RentPackageResource\RelationManagers;
+use App\Models\RentPackage;
 use Filament\Actions\ActionGroup;
 use Filament\Tables\Actions\DeleteAction;
 use Filament\Tables\Actions\EditAction;
@@ -47,20 +47,19 @@ use Filament\Tables\Columns\Summarizers\Sum;
 use IbrahimBougaoua\FilamentRatingStar\Actions\RatingStar;
 use IbrahimBougaoua\FilamentRatingStar\Columns\RatingStarColumn;
 
-
-class RentResource extends Resource
+class RentPackageResource extends Resource
 {
-    protected static ?string $model = Rent::class;
+    protected static ?string $model = RentPackage::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-shopping-cart';
 
-    protected static ?string $navigationLabel = 'Equipments';
+    protected static ?string $navigationLabel = 'Package';
 
     protected static ?string $navigationGroup = 'Renting';
 
     public static function Form(Form $form): Form
     {
-        $equipments = Equipment::get();
+        $packages = Package::get();
         return $form
             
             ->schema([
@@ -98,19 +97,19 @@ class RentResource extends Resource
                                 ->required(),
                             ])->columns(1),
 
-                    Wizard\Step::make('Choose Equipment')
+                    Wizard\Step::make('Choose Package')
                         ->schema([
 
-                            Forms\Components\Select::make('equipment_id')
-                                 ->label('Equipment')
+                            Forms\Components\Select::make('package_id')
+                                 ->label('Package')
                                  ->options(
-                                    $equipments->mapWithKeys(function (Equipment $equipment) {
-                                        return [$equipment->id => sprintf('%s (stock %s)', $equipment->name, $equipment->quantity)];
+                                    $packages->mapWithKeys(function (Package $package) {
+                                        return [$package->id => sprintf('%s (stock %s)', $package->name, $package->quantity)];
                                     })
                                     )
                                  ->reactive()
                                  ->afterStateUpdated(fn ($state, Forms\Set $set)=>
-                                      $set('unit_price', Equipment::find($state)?->price ?? 0))
+                                      $set('unit_price', Package::find($state)?->price ?? 0))
                                  ->searchable(),
                             Forms\Components\TextInput::make('quantity')
                                  ->label('Quantity')
@@ -185,10 +184,10 @@ class RentResource extends Resource
             }
         })    
         ->columns([
-            Tables\Columns\ImageColumn::make('equipment.image')
+            Tables\Columns\ImageColumn::make('package.image')
                 ->label('')
                 ->size(80),
-            Tables\Columns\TextColumn::make('equipment.name')
+            Tables\Columns\TextColumn::make('package.name')
                 ->searchable(),
             Tables\Columns\TextColumn::make('type')
                 ->badge()
@@ -252,7 +251,7 @@ class RentResource extends Resource
                                     'rejected' => 'Rejected',
                                 ])
                             ])
-                                ->action(function (Rent $rent, array $data): void {
+                                ->action(function (RentPackage $rent, array $data): void {
                                     $rent->status = $data['status'];
                                     $rent->save();
 
@@ -274,7 +273,7 @@ class RentResource extends Resource
                                         'for-pickup' => 'For-pickup',
                                     ])
                                 ])
-                                    ->action(function (Rent $rent, array $data): void {
+                                    ->action(function (RentPackage $rent, array $data): void {
                                         $rent->status = $data['status'];
                                         $rent->save();
     
@@ -289,7 +288,7 @@ class RentResource extends Resource
                             Action::make('For Pickup')
                                     ->icon('heroicon-m-truck')
                                     ->color('warning')
-                                    ->action(function (Rent $rent, array $data): void {
+                                    ->action(function (RentPackage $rent, array $data): void {
                                             $rent->status = 'for-pickup';
                                             $rent->save();
                                             $rent->save();
@@ -305,7 +304,7 @@ class RentResource extends Resource
                             Action::make('Completed')
                                     ->icon('heroicon-m-check-circle')
                                     ->color('success')
-                                    ->action(function (Rent $rent, array $data): void {
+                                    ->action(function (RentPackage $rent, array $data): void {
                                             $rent->status = 'completed';
                                             $rent->save();
                                             $rent->save();
@@ -321,7 +320,7 @@ class RentResource extends Resource
                             Action::make('Cancel Rent')
                                 ->icon('heroicon-m-trash')
                                 ->color('danger')
-                                ->action(function (Rent $rent): void {
+                                ->action(function (RentPackage $rent): void {
                                  
                                     $currentDate = now();
                                     $rentalStartDate = $rent->date_of_delivery;
@@ -371,11 +370,12 @@ class RentResource extends Resource
 
                                                 Forms\Components\Fileupload::make('image')
                                                     ->label('Upload Photos:')
-                                                    ->multiple(),
+                                                    ->multiple()
+                                                    ->preserveFilenames(),
                                             ])
                                 ])
                                 ->visible(fn ($record) => $record->status === 'completed' && auth()->user() && !auth()->user()->isAdmin())
-                                ->action(function (Rent $rent, array $data): void {
+                                ->action(function (RentPackage $rent, array $data): void {
                                
                                     $rent->update([
                                         'rating' => $data['rating'],
@@ -437,17 +437,17 @@ class RentResource extends Resource
             Group::make()
             ->schema([
 
-                 Section::make('Equipment Details')
+                 Section::make('Package Details')
                     ->schema([
                     Split::make([
                         Grid::make(3)
                             ->schema([
                         Group::make([
                             
-                            TextEntry::make('equipment.name')
+                            TextEntry::make('package.name')
                                 ->weight(FontWeight::Bold)
-                                ->label('Equipment Name:'),
-                            ImageEntry::make('equipment.image')
+                                ->label('Package Name:'),
+                            ImageEntry::make('package.image')
                                 ->hiddenlabel(),
                         ]),
                         
@@ -490,10 +490,10 @@ class RentResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListRents::route('/'),
-            'create' => Pages\CreateRent::route('/create'),
-            'view' => Pages\ViewRent::route('/{record}'),
-            'edit' => Pages\EditRent::route('/{record}/edit'),
+            'index' => Pages\ListRentPackages::route('/'),
+            'create' => Pages\CreateRentPackage::route('/create'),
+            'view' => Pages\ViewRentPackage::route('/{record}'),
+            'edit' => Pages\EditRentPackage::route('/{record}/edit'),
         ];
     } 
     
@@ -503,13 +503,12 @@ class RentResource extends Resource
 
     if ($user) {
         $userRentCount = $user->isAdmin()
-            ? Rent::count() 
-            : Rent::where('user_id', $user->id)->count(); 
+            ? RentPackage::count() 
+            : RentPackage::where('user_id', $user->id)->count(); 
 
         return $userRentCount > 0 ? (string) $userRentCount : null;
     }
 
     return null;
-    }
-    
+    }  
 }
