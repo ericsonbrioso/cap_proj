@@ -14,11 +14,11 @@ class Equipment extends Model
         'name',
         'type_id',
         'rent_id',
+        'code',
         'description',
         'image',
         'price',
         'days', 
-        'status',
         'quantity',
         
     ];
@@ -32,4 +32,14 @@ class Equipment extends Model
         {
             return $this->hasMany(Rent::class);
         }
+
+    public function averageRating()
+    {
+    return $this->rent->avg('rating');
+    }
+
+    public function getStatusAttribute()
+    {
+        return $this->attributes['quantity'] > 0 ? 'available' : 'unavailable';
+    }
 }

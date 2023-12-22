@@ -12,10 +12,12 @@ use Filament\Tables\Columns\Layout\Stack;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use IbrahimBougaoua\FilamentRatingStar\Actions\RatingStar;
 use IbrahimBougaoua\FilamentRatingStar\Columns\RatingStarColumn;
 use Filament\Tables\Columns\Summarizers\Average;
 use Filament\Support\Enums\Alignment;
-
+use Filament\Support\Enums\IconPosition;
+use Filament\Tables\Columns\TextColumn\TextColumnSize;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 
@@ -29,9 +31,10 @@ class RentRelationManager extends RelationManager
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('rent_number')
-                    ->required()
-                    ->maxLength(255),
+                RatingStar::make('rating')
+                    ->required(),
+                Forms\Components\TextArea::make('comment')
+                    ->required(),
             ]);
     }
 
@@ -50,8 +53,11 @@ class RentRelationManager extends RelationManager
                     Stack::make([
 
                         Tables\Columns\TextColumn::make('user.name')
-                            ->badge()
+                            ->color('gray'),
+                        Tables\Columns\TextColumn::make('rent_number')
+                            ->label('Verified Rent')
                             ->icon('heroicon-m-check-badge')
+                            ->iconPosition(IconPosition::After)
                             ->color('success'),
                         RatingStarColumn::make('rating')
                             ->summarize(Average::make()->numeric(
@@ -66,12 +72,14 @@ class RentRelationManager extends RelationManager
                             ->limit(5)
                             ->stacked()
                             ->limitedRemainingText(isSeparate: true),
-                    ])->space(3),
+                    ])->space(2),
 
                         Tables\Columns\TextColumn::make('updated_at')
                             ->label('Recent')
+                            ->color('gray')
                             ->since()
                             ->alignment(Alignment::End)
+                            ->size(TextColumnSize::ExtraSmall)
                             ->visibleFrom('md')
                             ->sortable(), 
                 ]),
@@ -103,7 +111,7 @@ class RentRelationManager extends RelationManager
                 ]),
             ])
             ->emptyStateActions([
-                Tables\Actions\CreateAction::make(),
+                //Tables\Actions\CreateAction::make(),
             ]);
     }
     

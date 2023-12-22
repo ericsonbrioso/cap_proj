@@ -14,13 +14,12 @@ return new class extends Migration
         Schema::create('equipment', function (Blueprint $table) {
             $table->id();
             $table->foreignId('type_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('rent_id')->constrained()->cascadeOnDelete();
+            $table->string('code')->unique();
             $table->string('name');
             $table->string('description')->nullable();
             $table->string('image')->nullable();
             $table->decimal('price', 8, 2);
             $table->integer('days');
-            $table->string('status');
             $table->integer('quantity');
             $table->timestamps();
         });

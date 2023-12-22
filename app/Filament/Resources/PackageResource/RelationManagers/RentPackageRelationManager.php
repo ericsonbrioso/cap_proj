@@ -17,6 +17,8 @@ use Filament\Support\Enums\Alignment;
 
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Support\Enums\IconPosition;
+use Filament\Tables\Columns\TextColumn\TextColumnSize;
 
 class RentPackageRelationManager extends RelationManager
 {
@@ -49,8 +51,11 @@ class RentPackageRelationManager extends RelationManager
                     Stack::make([
 
                         Tables\Columns\TextColumn::make('user.name')
-                            ->badge()
+                            ->color('gray'),
+                        Tables\Columns\TextColumn::make('rent_number')
+                            ->label('Verified Rent')
                             ->icon('heroicon-m-check-badge')
+                            ->iconPosition(IconPosition::After)
                             ->color('success'),
                         RatingStarColumn::make('rating')
                             ->summarize(Average::make()->numeric(
@@ -66,12 +71,14 @@ class RentPackageRelationManager extends RelationManager
                             ->stacked()
                             ->limitedRemainingText(isSeparate: true),
 
-                    ])->space(3),
+                    ])->space(2),
 
                         Tables\Columns\TextColumn::make('updated_at')
                             ->label('Recent')
+                            ->color('gray')
                             ->since()
                             ->alignment(Alignment::End)
+                            ->size(TextColumnSize::ExtraSmall)
                             ->visibleFrom('md')
                             ->sortable(), 
                         

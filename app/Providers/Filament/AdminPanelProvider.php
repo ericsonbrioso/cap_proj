@@ -24,7 +24,7 @@ class AdminPanelProvider extends PanelProvider
     public function panel(Panel $panel): Panel
     {
         return $panel
-            ->plugins([FilamentFullCalendarPlugin::make()]) 
+            ->plugins([FilamentFullCalendarPlugin::make()])
             ->sidebarCollapsibleOnDesktop()
             ->darkMode(false)
             ->default()

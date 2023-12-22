@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('description')->nullable();
+            $table->string('code')->unique();
             $table->string('image')->nullable();
             $table->string('status');
             $table->decimal('subtotal', 10 ,2)->nullable();

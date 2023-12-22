@@ -51,11 +51,13 @@ class RentPackageResource extends Resource
 {
     protected static ?string $model = RentPackage::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-shopping-cart';
+    protected static ?string $navigationIcon = 'heroicon-o-shopping-bag';
 
-    protected static ?string $navigationLabel = 'Package';
+    protected static ?string $navigationLabel = 'Rented Packages';
 
-    protected static ?string $navigationGroup = 'Renting';
+    protected static ?int $navigationSort = 2;
+
+    protected static ?string $navigationGroup = 'Renting Management';
 
     public static function Form(Form $form): Form
     {
@@ -144,7 +146,6 @@ class RentPackageResource extends Resource
                             ->prefix('Start')
                             ->required()
                             ->seconds(false)
-                            ->native(false)
                             ->minDate(now()->subHours(14))
                             ->hint(str('To be delivered')->inlineMarkdown()->toHtmlString())
                             ->hintIcon('heroicon-m-question-mark-circle'),
@@ -154,7 +155,6 @@ class RentPackageResource extends Resource
                             ->prefix('End')  
                             ->required()
                             ->seconds(false)
-                            ->native(false)
                             ->minDate(now()),
                         Forms\Components\TextInput::make('delivery_fee')
                             ->label('Transportation Fee')

@@ -54,9 +54,9 @@ class RentResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-shopping-cart';
 
-    protected static ?string $navigationLabel = 'Equipments';
+    protected static ?string $navigationLabel = 'Rented Equipments';
 
-    protected static ?string $navigationGroup = 'Renting';
+    protected static ?string $navigationGroup = 'Renting Management';
 
     public static function Form(Form $form): Form
     {
@@ -95,7 +95,9 @@ class RentResource extends Resource
                                     'pickup' => 'Pickup',
                                     'delivery' => 'Delivery',
                                 ])
-                                ->required(),
+                                ->required()
+                                ->hint(str('Pick')->inlineMarkdown()->toHtmlString())
+                                ->hintIcon('heroicon-m-question-mark-circle'),
                             ])->columns(1),
 
                     Wizard\Step::make('Choose Equipment')
@@ -145,7 +147,6 @@ class RentResource extends Resource
                             ->prefix('Start')
                             ->required()
                             ->seconds(false)
-                            ->native(false)
                             ->minDate(now()->subHours(14))
                             ->hint(str('To be delivered')->inlineMarkdown()->toHtmlString())
                             ->hintIcon('heroicon-m-question-mark-circle'),
@@ -155,7 +156,6 @@ class RentResource extends Resource
                             ->prefix('End')  
                             ->required()
                             ->seconds(false)
-                            ->native(false)
                             ->minDate(now()),
                         Forms\Components\TextInput::make('delivery_fee')
                             ->label('Transportation Fee')
@@ -169,7 +169,8 @@ class RentResource extends Resource
                             ->suffixIcon('heroicon-m-truck'),
 
                         ]),
-                ])->columnSpanFull()
+                ])->columnSpanFull(),
+                
             ]);
 
     }
@@ -371,7 +372,8 @@ class RentResource extends Resource
 
                                                 Forms\Components\Fileupload::make('image')
                                                     ->label('Upload Photos:')
-                                                    ->multiple(),
+                                                    ->multiple()
+                                                    ->preserveFilenames(),
                                             ])
                                 ])
                                 ->visible(fn ($record) => $record->status === 'completed' && auth()->user() && !auth()->user()->isAdmin())
@@ -413,8 +415,7 @@ class RentResource extends Resource
                         ->schema([
                         TextEntry::make('rent_number')
                             ->label('Rent Number:')
-                            ->badge()
-                            ->color('success'),
+                            ->badge(),
                         TextEntry::make('user.name')
                             ->label('Client Name:')
                             ->icon('heroicon-m-user'),
@@ -422,7 +423,7 @@ class RentResource extends Resource
                             ->label('Contact Number:')
                             ->icon('heroicon-m-phone'),
                         TextEntry::make('date_of_delivery')
-                            ->label('Start of rental: (sheduled for delivery on/before the said date)')
+                            ->label('Start of rental: (sheduled for delivery)')
                             ->icon('heroicon-m-truck'),
                         TextEntry::make('address')
                             ->label('Address:')
@@ -466,10 +467,11 @@ class RentResource extends Resource
                         ]),
 
                         Group::make([
+                            TextEntry::make('type')
+                                ->label('Type:'),
                             TextEntry::make('delivery_fee')
                                 ->label('Transportation Fee:')
                                 ->prefix('₱ '),
-                           
                         ])
                     ]),
                                 ])

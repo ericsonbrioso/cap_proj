@@ -12,9 +12,11 @@ class Package extends Model
     protected $fillable = [
         'name',
         'equipment_id',
+        'rentpackage_id',
+        'code',
         'description',
         'image',
-        'price',
+        'subtotal',
         'status',
         
     ];
@@ -28,27 +30,10 @@ class Package extends Model
     {
         return $this->hasMany(PackageEquipment::class);
     }
-    
-    protected static function booted()
-    {
-        static::saving(function ($package) {
-            $package->calculateAndSetSubtotal();
-        });
-    }
-
-    public function calculateAndSetSubtotal()
-    {
-        // Calculate and set the subtotal based on the items
-        $price = $this->items->reduce(function ($carry, $item) {
-            return $carry + ($item->unit_price * $item->quantity);
-        }, 0);
-
-        // Update the model with the new subtotal
-        $this->price = number_format($price, 2, '.', '');
-    }
 
     public function rentpackage()
     {
             return $this->hasMany(RentPackage::class);
     }
+    
 }

@@ -29,6 +29,7 @@ use Filament\Tables\Columns\Layout\Panel;
 use Filament\Tables\Columns\Layout\Split;
 use Filament\Tables\Columns\Layout\Stack;
 use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\TextColumn\TextColumnSize;
 use IbrahimBougaoua\FilamentRatingStar\Actions\RatingStar;
 use IbrahimBougaoua\FilamentRatingStar\Columns\RatingStarColumn;
 
@@ -36,9 +37,9 @@ class PackageResource extends Resource
 {
     protected static ?string $model = Package::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-briefcase';
+    protected static ?string $navigationIcon = 'heroicon-o-cube';
 
-    protected static ?string $navigationGroup = 'Inventory';
+    protected static ?string $navigationGroup = 'Inventory Management';
 
     public static function form(Form $form): Form
     {
@@ -54,6 +55,10 @@ class PackageResource extends Resource
 
                                 Forms\Components\TextInput::make('name')
                                     ->required(),
+                                Forms\Components\TextInput::make('code')
+                                    ->required()
+                                    ->maxLength(255)
+                                    ->unique(ignoreRecord: true),
                                 Forms\Components\Select::make('status')
                                     ->label('Availability')
                                     ->options([
@@ -85,7 +90,11 @@ class PackageResource extends Resource
 
                             Forms\Components\Select::make('equipment_id')
                                 ->label('Equipment')
-                                ->options(Equipment::query()->pluck('name','id'))
+                                ->options(
+                                    $equipments->mapWithKeys(function (Equipment $equipment) {
+                                        return [$equipment->id => sprintf('%s (stock %s)', $equipment->name, $equipment->quantity)];
+                                    })
+                                    )
                                 ->searchable()
                                 ->reactive()
                                 ->afterStateUpdated(fn ($state, Forms\Set $set)=>
@@ -137,7 +146,7 @@ class PackageResource extends Resource
                             Section::make('Total')
                                 ->schema([
                                 
-                             Forms\Components\TextInput::make('price')
+                             Forms\Components\TextInput::make('subtotal')
                                     ->numeric()
                                     ->disabled()
                                     ->prefix('$')
@@ -174,39 +183,68 @@ class PackageResource extends Resource
         return $table
         ->contentGrid([
             'md' => 2,
-            'xl' => 2,
+            'xl' => 5,
         ])
         ->columns([
+            
+            Split::make([
+                stack::make([
+
+                ImageColumn::make('image')
+                    ->size(165),
 
                 Split::make([
-                    ImageColumn::make('image')
-                        ->size(150)
-                        ->stacked(),
-                    Stack::make([
-
                     TextColumn::make('name')
-                        ->weight(FontWeight::Bold)
-                        ->searchable()
-                        ->sortable(),
-                    TextColumn::make('description'),
-
-                    ]),
-                    Stack::make([
-                        
-                        TextColumn::make('price')
-                            ->prefix('₱')
-                            ->sortable(),
-                        TextColumn::make('status')
-                            ->badge()
-                            ->color(fn (string $state): string => match ($state)
-                            {
+                    ->weight(FontWeight::Bold)
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('status')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state)
+                    {
                             'available' => 'success',
                             'unavailable' => 'warning',
-                            }),
-                       // RatingStarColumn::make('rating')
-                    ])
-                    
-                ]), 
+                    }),
+                ]),
+                
+                TextColumn::make('price')
+                    ->numeric(
+                        decimalPlaces: 2,
+                        decimalSeparator: '.',
+                        thousandsSeparator: ',',
+                    )
+                    ->label('Rate Per day')
+                    ->prefix('₱ ')
+                    ->color('warning')
+                    ->sortable(),
+                
+                Split::make([
+
+                RatingStarColumn::make('rentpackage_avg_rating')
+                    ->avg('rent', 'rating'),
+                TextColumn::make('rentpackage_avg_rating')
+                    ->avg('rentpackage', 'rating')
+                    ->suffix('/5')
+                    ->color('gray')
+                    ->size(TextColumnSize::ExtraSmall)
+                    ->numeric(
+                        decimalPlaces: 1,
+                        decimalSeparator: '.',
+                    ),
+                ]),
+
+                TextColumn::make('rentpackage_count')->counts('rentpackage')
+                    ->suffix(' Ratings')
+                    ->color('gray')
+                    ->size(TextColumnSize::ExtraSmall),
+                TextColumn::make('quantity')
+                    ->suffix(' Stocks')
+                    ->color('gray')
+                    ->size(TextColumnSize::ExtraSmall),
+
+                ])->space(1),
+                
+            ]),  
             
         ])
             ->filters([

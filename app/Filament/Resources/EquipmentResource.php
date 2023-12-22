@@ -14,6 +14,9 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Models\Type;
+use Filament\Actions\ActionGroup;
+use Filament\Forms\Components\Actions;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Textarea;
@@ -23,7 +26,6 @@ use Filament\Support\Enums\FontWeight;
 use Filament\Tables\Columns\Layout\Panel;
 use Filament\Tables\Columns\Layout\Stack;
 use Filament\Tables\Columns\ImageColumn;
-use Filament\Actions\ActionGroup;
 use Filament\Infolists\Components\Grid;
 use Filament\Infolists\Components\Group;
 use Filament\Infolists\Components\ImageEntry;
@@ -35,14 +37,19 @@ use Filament\Tables\Actions\DeleteAction;
 use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Actions\ViewAction;
 use Filament\Tables\Columns\Layout\Split as LayoutSplit;
+use Filament\Tables\Columns\Summarizers\Average;
+use Filament\Tables\Columns\TextColumn\TextColumnSize;
+use IbrahimBougaoua\FilamentRatingStar\Columns\RatingStarColumn;
 
 class EquipmentResource extends Resource
 {
     protected static ?string $model = Equipment::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-wrench-screwdriver';
+    protected static ?string $navigationIcon = 'heroicon-o-wrench';
 
-    protected static ?string $navigationGroup = 'Inventory';
+    protected static ?string $navigationLabel = 'Equipments';
+
+    protected static ?string $navigationGroup = 'Inventory Management';
 
     public static function form(Form $form): Form
     {
@@ -54,18 +61,21 @@ class EquipmentResource extends Resource
 
                                 Forms\Components\TextInput::make('name')
                                     ->required()
-                                    ->maxLength(255)
-                                    ->unique(ignoreRecord: true),
+                                    ->maxLength(255),
                                 Forms\Components\Select::make('type_id')
                                     ->options(Type::all()->pluck('name', 'id'))
                                     ->label('Equipment Type')
                                     ->required()
                                     ->searchable()
                                     ->preload(),
+                                Forms\Components\TextInput::make('code')
+                                    ->required()
+                                    ->maxLength(255)
+                                    ->unique(ignoreRecord: true),
                                 Forms\Components\Textarea::make('description')
                                     ->columnSpan('full'),
                                 
-                            ])->columns(2),
+                            ])->columns(3),
                     Forms\Components\Group::make()
                             ->schema([
                         Forms\Components\Section::make()
@@ -84,13 +94,6 @@ class EquipmentResource extends Resource
                                     ->label('Days')
                                     ->required()
                                     ->numeric(),
-        
-                                Forms\Components\Select::make('status')
-                                    ->label('Availability')
-                                     ->options([
-                                        'available' => 'Available',
-                                        'unavailable' => 'Unvailable',
-                                    ]), 
                                 
                             ]),
                         ]),
@@ -102,6 +105,7 @@ class EquipmentResource extends Resource
 
                                 Forms\Components\FileUpload::make('image')
                                     ->image()
+                                    ->openable()
                                     ->preserveFilenames(),        
 
                             ])
@@ -113,38 +117,66 @@ class EquipmentResource extends Resource
         return $table
         ->contentGrid([
             'md' => 2,
-            'xl' => 2,
+            'xl' => 5,
         ])
         ->columns([
             
             LayoutSplit::make([
+                stack::make([
+
                 ImageColumn::make('image')
-                    ->size(150),
+                    ->size(165),
 
-                Stack::make([
-
-                TextColumn::make('name')
+                LayoutSplit::make([
+                    TextColumn::make('name')
                     ->weight(FontWeight::Bold)
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('description'),   
-                    ]),
+                TextColumn::make('status')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state)
+                    {
+                            'available' => 'success',
+                            'unavailable' => 'warning',
+                    }),
+                ]),
+                
+                TextColumn::make('price')
+                    ->numeric(
+                        decimalPlaces: 2,
+                        decimalSeparator: '.',
+                        thousandsSeparator: ',',
+                    )
+                    ->label('Rate Per day')
+                    ->prefix('₱ ')
+                    ->color('warning')
+                    ->sortable(),
+                
+                LayoutSplit::make([
 
-                Stack::make([
+                RatingStarColumn::make('rent_avg_rating')
+                    ->avg('rent', 'rating'),
+                TextColumn::make('rent_avg_rating')
+                    ->avg('rent', 'rating')
+                    ->suffix('/5')
+                    ->color('gray')
+                    ->size(TextColumnSize::ExtraSmall)
+                    ->numeric(
+                        decimalPlaces: 1,
+                        decimalSeparator: '.',
+                    ),
+                ]),
 
-                    TextColumn::make('status')
-                        ->badge()
-                        ->color(fn (string $state): string => match ($state)
-                        {
-                        'available' => 'success',
-                        'unavailable' => 'warning',
-                        }),
-                    TextColumn::make('price')
-                        ->label('Rate Per day')
-                        ->prefix('₱')
-                        ->sortable(),
-                   // RatingStarColumn::make('rating')
-                ])
+                TextColumn::make('rent_count')->counts('rent')
+                    ->suffix(' Ratings')
+                    ->color('gray')
+                    ->size(TextColumnSize::ExtraSmall),
+                TextColumn::make('quantity')
+                    ->suffix(' Stocks')
+                    ->color('gray')
+                    ->size(TextColumnSize::ExtraSmall),
+
+                ])->space(1),
                 
             ]), 
     ])
@@ -154,12 +186,12 @@ class EquipmentResource extends Resource
             ->actions([
         
                     ViewAction::make(),
-                    EditAction::make(),
+                    EditAction::make()
 
             ])
             ->bulkActions([
                     Tables\Actions\BulkActionGroup::make([
-                    
+                        
                 ]),
             ])
             ->emptyStateActions([
@@ -186,18 +218,36 @@ class EquipmentResource extends Resource
                             ]),
 
                             Group::make([
+                                TextEntry::make('code')
+                                    ->label('Code:')
+                                    ->badge()
+                                    ->color('info')
+                                    ->copyable()
+                                    ->copyMessage('Copied!')
+                                    ->copyMessageDuration(1500),
                                 TextEntry::make('type.name')
                                     ->label('Type:'),
                                 TextEntry::make('description')
                                     ->label('Description:'),
-                                TextEntry::make('status')
-                                    ->label('Status:')
-                                    ->badge()
-                                    ->color('success'),
+                                
                             ]),
 
                             Group::make([
+                                TextEntry::make('status')
+                                    ->label('Status:')
+                                    ->badge()
+                                    ->color(fn (string $state): string => match ($state)
+                                    {
+                                        'available' => 'success',
+                                        'unavailable' => 'warning',
+                                    }),
                                 TextEntry::make('price')
+                                    ->numeric(
+                                        decimalPlaces: 2,
+                                        decimalSeparator: '.',
+                                        thousandsSeparator: ',',
+                                    )
+                                    ->prefix('₱ ')
                                     ->label('Unit Price:'),
                                 TextEntry::make('quantity')
                                     ->label('Stocks:'),
