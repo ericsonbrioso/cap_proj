@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\EquipmentResource\RelationManagers;
 
+use App\Models\Equipment;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -20,28 +21,92 @@ use Filament\Support\Enums\IconPosition;
 use Filament\Tables\Columns\TextColumn\TextColumnSize;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Forms\Components\Wizard;
+use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
+use Ysfkaya\FilamentPhoneInput\Tables\PhoneInputColumn;
 
 class RentRelationManager extends RelationManager
 {
     protected static string $relationship = 'Rent';
 
-    protected static ?string $title = 'Ratings & Reviews';
+    protected static ?string $title = 'Reviews & Rating';
+
+    protected static ?string $icon = 'heroicon-m-check-badge';
 
     public function form(Form $form): Form
     {
+        $equipments = Equipment::get();
         return $form
             ->schema([
-                RatingStar::make('rating')
-                    ->required(),
-                Forms\Components\TextArea::make('comment')
-                    ->required(),
+                Wizard::make([
+                    
+                    Wizard\Step::make('Rent')
+                        ->description('Select Type and Quantity')
+                        ->schema([
+
+                        Forms\Components\Select::make('type')
+                            ->label('Choose Type')
+                            ->options([
+                                'pickup' => 'Pickup',
+                                'delivery' => 'Delivery',
+                            ])
+                            ->required(),
+                        Forms\Components\TextInput::make('quantity')
+                            ->label('Quantity')
+                            ->default(1)
+                            ->numeric(),
+                        ])->columns(2),
+
+                    Wizard\Step::make('Duration')
+                        ->description('Select Date for pickup/delivery and return')
+                        ->schema([
+
+                        Forms\Components\DateTimePicker::make('date_of_delivery')
+                            ->label('Pickup/Delivery')
+                            ->prefix('Start')
+                            ->required()
+                            ->seconds(false)
+                            ->minDate(now()->subHours(14)),
+                        Forms\Components\DateTimePicker::make('date_of_pickup')->after('date_of_delivery')
+                            ->label('Return')
+                            ->prefix('End')  
+                            ->required()
+                            ->seconds(false)
+                            ->minDate(now()),
+                        ])->columns(2),
+
+                    Wizard\Step::make('Other Information')
+                        ->description('Client Details')
+                        ->schema([
+                   
+                            Forms\Components\TextInput::make('rent_number')
+                                ->label('Rent Number')
+                                ->default('RN-'. random_int(100000, 999999))
+                                ->disabled()
+                                ->dehydrated()
+                                ->required(),
+                            Forms\Components\Hidden::make('user_id')
+                                ->default(auth()->check() ? auth()->user()->id : null)
+                                ->required(),
+                            Forms\Components\TextInput::make('address')
+                                ->label('Complete Address')
+                                ->required()
+                                ->maxLength(255)
+                                ->default(auth()->check() ? auth()->user()->address : null),
+                            PhoneInput::make('contact')
+                                ->required()
+                                ->disallowDropdown()
+                                ->defaultCountry('Philippines')
+                                ->default(auth()->check() ? auth()->user()->contact : null),
+                            
+                            ])->columns(1),
+                ])->columnSpanFull(),
             ]);
     }
 
     public function table(Table $table): Table
     {
         return $table
-            ->recordTitleAttribute('rent_number')
 
             ->contentGrid([
                 'md' => 2,
@@ -99,20 +164,26 @@ class RentRelationManager extends RelationManager
                        
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make(),
+                //Tables\Actions\CreateAction::make()
+                 //   ->label('Add to Cart')
+                  //  ->color('warning'),     
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    
                 ]),
             ])
             ->emptyStateActions([
-                //Tables\Actions\CreateAction::make(),
+               // Tables\Actions\CreateAction::make(),
             ]);
+    }
+
+    public function isReadOnly(): bool
+    {
+    return false;
     }
     
 }

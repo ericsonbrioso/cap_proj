@@ -2,11 +2,11 @@
 
 namespace App\Policies;
 
-use App\Models\Rent;
+use App\Models\RentPackage;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
 
-class RentPolicy
+class RentPackagePolicy
 {
     /**
      * Determine whether the user can view any models.
@@ -19,7 +19,7 @@ class RentPolicy
     /**
      * Determine whether the user can view the model.
      */
-    public function view(User $user, Rent $rent): bool
+    public function view(User $user, RentPackage $rentPackage): bool
     {
         return $user->isAdmin() || $user->isUser();
     }
@@ -35,7 +35,7 @@ class RentPolicy
     /**
      * Determine whether the user can update the model.
      */
-    public function update(User $user, Rent $rent): bool
+    public function update(User $user, RentPackage $rentPackage): bool
     {
         return $user->isAdmin() || $user->isUser();
     }
@@ -43,7 +43,7 @@ class RentPolicy
     /**
      * Determine whether the user can delete the model.
      */
-    public function delete(User $user, Rent $rent): bool
+    public function delete(User $user, RentPackage $rentPackage): bool
     {
         return $user->isAdmin() || $user->isUser();
     }
@@ -51,7 +51,7 @@ class RentPolicy
     /**
      * Determine whether the user can restore the model.
      */
-    public function restore(User $user, Rent $rent): bool
+    public function restore(User $user, RentPackage $rentPackage): bool
     {
         return $user->isAdmin();
     }
@@ -59,9 +59,8 @@ class RentPolicy
     /**
      * Determine whether the user can permanently delete the model.
      */
-    public function forceDelete(User $user, Rent $rent): bool
+    public function forceDelete(User $user, RentPackage $rentPackage): bool
     {
         return $user->isAdmin();
     }
-
 }

@@ -21,4 +21,25 @@ class PackageEquipment extends Model
     {   
         return $this->belongsTo(Package::class);
     }  
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::saved(function ($packageEquipment) {
+            $equipment = Equipment::find($packageEquipment->equipment_id);
+
+            if ($equipment) {
+                $equipment->decrement('quantity', $packageEquipment->quantity);
+            }
+        });
+
+        static::deleted(function ($packageEquipment) {
+            $equipment = Equipment::find($packageEquipment->equipment_id);
+
+            if ($equipment) {
+                $equipment->increment('quantity', $packageEquipment->quantity);
+            }
+        });
+    }
 }

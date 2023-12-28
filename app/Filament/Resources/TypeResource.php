@@ -13,6 +13,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Forms\Components\ColorPicker;
+use Illuminate\Support\Facades\Auth;
 
 class TypeResource extends Resource
 {
@@ -113,4 +114,16 @@ class TypeResource extends Resource
     {
         return static::getModel()::count();
     } 
+
+    public static function getnavigationGroup(): string
+    {
+        // Check if the user is an admin
+        if (Auth::check() && Auth::user()->isAdmin()) {
+            // Show the label for admins
+            return 'Inventory Management';
+        }
+
+        // For regular users or other conditions, you can return a default label
+        return 'Equipment & Packages';
+    }
 }

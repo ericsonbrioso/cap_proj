@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('equipment_id')->nullable()->constrained()->cascadeOnDelete();
             $table->string('rent_number')->unique();
-            $table->integer('quantity');
+            $table->integer('quantity')->default(1);
             $table->decimal('unit_price', 10 ,2)->nullable();
             $table->decimal('total_price', 10 ,2)->nullable();
             $table->decimal('delivery_fee', 10 ,2);
@@ -25,7 +25,7 @@ return new class extends Migration
             $table->string('type');
             $table->dateTime('date_of_pickup');
             $table->dateTime('date_of_delivery')->nullable();
-            $table->string('status')->default('pending');
+            $table->string('status')->default('checkout');
             $table->softDeletes();
             $table->timestamps();
             $table->integer('rating')->nullable();

@@ -32,6 +32,7 @@ use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn\TextColumnSize;
 use IbrahimBougaoua\FilamentRatingStar\Actions\RatingStar;
 use IbrahimBougaoua\FilamentRatingStar\Columns\RatingStarColumn;
+use Illuminate\Support\Facades\Auth;
 
 class PackageResource extends Resource
 {
@@ -39,7 +40,7 @@ class PackageResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-cube';
 
-    protected static ?string $navigationGroup = 'Inventory Management';
+    protected static ?string $navigationGroup = 'Inventory';
 
     public static function form(Form $form): Form
     {
@@ -95,74 +96,59 @@ class PackageResource extends Resource
                                         return [$equipment->id => sprintf('%s (stock %s)', $equipment->name, $equipment->quantity)];
                                     })
                                     )
-                                ->searchable()
-                                ->reactive()
-                                ->afterStateUpdated(fn ($state, Forms\Set $set)=>
-                                      $set('unit_price', Equipment::find($state)?->price ?? 0))
+                                
                                 ->disableOptionWhen(function ($value, $state, Get $get) {
-                                    return collect($get('../*.equipment_id'))
-                                        ->reject(fn($id) => $id == $state)
-                                        ->filter()
-                                        ->contains($value);
-                                })
+                                        return collect($get('../*.product_id'))
+                                            ->reject(fn($id) => $id == $state)
+                                            ->filter()
+                                            ->contains($value);
+                                    })
                                 ->required(),
-                            Forms\Components\TextInput::make('unit_price')
-                                ->label('Unit Price')
-                                ->numeric()
-                                ->disabled()
-                                ->dehydrated(),
                             Forms\Components\TextInput::make('quantity')
                                 ->integer()
                                 ->default(1)
-                                ->required()
-                                ->live()
-                                ->dehydrated(),
-                            Forms\Components\Placeholder::make('total_price')
-                                ->label('Total Price')
-                                ->content(function ($get) {
-                                    $quantity = (float)$get('quantity');
-                                    $unit_price = (float)$get('unit_price');
-    
-                                    if ($quantity !== null && $unit_price !== null) {
-                                        return $quantity * $unit_price;
-                                    }
-                                    return 0;
-                                }),      
-                        ])
-                        ->afterStateUpdated(function (Get $get, Set $set) {
-                            self::updateTotals($get, $set);
-                        })
-                        ->deleteAction(
-                            fn(Action $action) => $action->after(fn(Get $get, Set $set) => self::updateTotals($get, $set)),
-                        )
-                        ->reorderable(false)
-                        ->columns(2),
-                        
+                                ->required(),    
+                            ]) 
+                            ->live()
+                            // After adding a new row, we need to update the totals
+                            ->afterStateUpdated(function (Get $get, Set $set) {
+                                self::updateTotals($get, $set);
+                            })
+                            // After deleting a row, we need to update the totals
+                            ->deleteAction(
+                                fn(Action $action) => $action->after(fn(Get $get, Set $set) => self::updateTotals($get, $set)),
+                            )
+                            // Disable reordering
+                            ->reorderable(false)
+                            ->columns(2)  
                         ]),
+                    ]),
 
-                        Forms\Components\Group::make()
-                            ->schema([
-                
-                            Section::make('Total')
-                                ->schema([
-                                
-                             Forms\Components\TextInput::make('subtotal')
-                                    ->numeric()
-                                    ->disabled()
-                                    ->prefix('$')
-                                    ->afterStateHydrated(function (Get $get, Set $set) {
-                                        self::updateTotals($get, $set);
-                                    }),
-                    ]),
-                ]),  
-                    ]),
-                
-            ]);
+            Section::make()
+                ->columns(1)
+                ->maxWidth('1/2')
+                ->schema([
+                    Forms\Components\TextInput::make('subtotal')
+                        ->numeric()
+                        // Read-only, because it's calculated
+                        ->readOnly()
+                        ->prefix('$')
+                        // This enables us to display the subtotal on the edit page load
+                        ->afterStateHydrated(function (Get $get, Set $set) {
+                            self::updateTotals($get, $set);
+                        }),
+                    Forms\Components\TextInput::make('total')
+                        ->numeric()
+                        // Read-only, because it's calculated
+                        ->readOnly()
+                        ->prefix('$')
+                ])
+         ]);
             
     }
 
     public static function updateTotals(Get $get, Set $set): void
-    {
+{
     // Retrieve all selected products and remove empty rows
     $selectedEquipments = collect($get('items'))->filter(fn($item) => !empty($item['equipment_id']) && !empty($item['quantity']));
  
@@ -176,7 +162,8 @@ class PackageResource extends Resource
  
     // Update the state with the new values
     $set('subtotal', number_format($subtotal, 2, '.', ''));
-    }
+    $set('total', number_format($subtotal, 2, '.', '')); // Total does not include taxes
+}
 
     public static function table(Table $table): Table
     {
@@ -207,13 +194,12 @@ class PackageResource extends Resource
                     }),
                 ]),
                 
-                TextColumn::make('price')
+                TextColumn::make('total')
                     ->numeric(
                         decimalPlaces: 2,
                         decimalSeparator: '.',
                         thousandsSeparator: ',',
                     )
-                    ->label('Rate Per day')
                     ->prefix('₱ ')
                     ->color('warning')
                     ->sortable(),
@@ -284,5 +270,17 @@ class PackageResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         return static::getModel()::count();
+    }
+
+    public static function getnavigationGroup(): string
+    {
+        // Check if the user is an admin
+        if (Auth::check() && Auth::user()->isAdmin()) {
+            // Show the label for admins
+            return 'Inventory Management';
+        }
+
+        // For regular users or other conditions, you can return a default label
+        return 'Equipment & Packages';
     }
 }

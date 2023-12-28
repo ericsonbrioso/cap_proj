@@ -36,6 +36,7 @@ use Filament\Infolists\Components\Split;
 use Filament\Notifications\Notification;
 use Filament\Support\Enums\FontWeight;
 use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\Layout\Stack;
 use Filament\Tables\Columns\Layout\Panel;
@@ -46,6 +47,7 @@ use Ysfkaya\FilamentPhoneInput\Tables\PhoneInputColumn;
 use Filament\Tables\Columns\Summarizers\Sum;
 use IbrahimBougaoua\FilamentRatingStar\Actions\RatingStar;
 use IbrahimBougaoua\FilamentRatingStar\Columns\RatingStarColumn;
+use Illuminate\Support\Facades\Auth;
 
 class RentPackageResource extends Resource
 {
@@ -57,7 +59,7 @@ class RentPackageResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
-    protected static ?string $navigationGroup = 'Renting Management';
+    protected static ?string $navigationGroup = null;
 
     public static function Form(Form $form): Form
     {
@@ -67,13 +69,86 @@ class RentPackageResource extends Resource
             ->schema([
 
                 Wizard::make([
+
+                    Wizard\Step::make('Choose Package')
+                        ->icon('heroicon-m-shopping-bag')
+                        ->description('Select Package & Quantity')
+                        ->schema([
+
+                        Forms\Components\Select::make('package_id')
+                            ->label('Package')
+                            ->options(
+                               $packages->mapWithKeys(function (Package $package) {
+                                   return [$package->id => sprintf('%s (stock %s)', $package->name, $package->quantity)];
+                               })
+                               )
+                            ->afterStateUpdated(fn ($state, Forms\Set $set)=>
+                               $set('unit_price', Package::find($state)?->price ?? 0))
+                            ->reactive()
+                            ->searchable()
+                            ->required(),
+                       Forms\Components\TextInput::make('quantity')
+                            ->label('Quantity')
+                            ->default(1)
+                            ->live()
+                            ->dehydrated()
+                            ->numeric()
+                            ->required(),
+                       Forms\Components\TextInput::make('unit_price')
+                            ->label('Unit Price')
+                            ->numeric()
+                            ->readOnly()
+                            ->dehydrated()
+                            ->prefix('₱'),
+                       Forms\Components\Placeholder::make('total_price')
+                            ->label('Total Price:')
+                            ->content(function ($get) {
+                                $quantity = (float)$get('quantity');
+                                $unit_price = (float)$get('unit_price');
+
+                                if ($quantity !== null && $unit_price !== null) {
+                                    return $quantity * $unit_price;
+                                }
+                                return 0;
+                            }),
+                        ])->columns(2),
+                        
+                
+                    Wizard\Step::make('Duration')
+                        ->icon('heroicon-m-calendar-days')
+                        ->description('Select pickup/delivery & return date')
+                        ->schema([
+
+                        Forms\Components\DateTimePicker::make('date_of_delivery')
+                            ->label('Pickup/Delivery')
+                            ->prefix('Start')
+                            ->required()
+                            ->seconds(false)
+                            ->minDate(now()->subHours(14)),
+                        Forms\Components\DateTimePicker::make('date_of_pickup')->after('date_of_delivery')
+                            ->label('Return')
+                            ->prefix('End')  
+                            ->required()
+                            ->seconds(false)
+                            ->minDate(now()),
+                        Forms\Components\Select::make('type')
+                            ->label('Choose Type')
+                            ->options([
+                                'pickup' => 'Pickup',
+                                'delivery' => 'Delivery',
+                            ])
+                            ->required(),
+                        ])->columns(2),
+
                     Wizard\Step::make('Client Details')
+                        ->icon('heroicon-m-user')
+                        ->description('Fill out form')
                         ->schema([
                    
                             Forms\Components\TextInput::make('rent_number')
                                 ->label('Rent Number')
                                 ->default('RN-'. random_int(100000, 999999))
-                                ->readOnly()
+                                ->disabled()
                                 ->dehydrated()
                                 ->required(),
                             Forms\Components\Hidden::make('user_id')
@@ -83,92 +158,42 @@ class RentPackageResource extends Resource
                                 ->label('Complete Address')
                                 ->required()
                                 ->maxLength(255)
-                                ->default(auth()->check() ? auth()->user()->address : null)
-                                ->readOnly(),
+                                ->default(auth()->check() ? auth()->user()->address : null),
                             PhoneInput::make('contact')
                                 ->required()
                                 ->disallowDropdown()
                                 ->defaultCountry('Philippines')
                                 ->default(auth()->check() ? auth()->user()->contact : null),
-                            Forms\Components\Select::make('type')
-                                ->label('Choose Type')
-                                ->options([
-                                    'pickup' => 'Pickup',
-                                    'delivery' => 'Delivery',
-                                ])
-                                ->required(),
+                            
                             ])->columns(1),
 
-                    Wizard\Step::make('Choose Package')
-                        ->schema([
-
-                            Forms\Components\Select::make('package_id')
-                                 ->label('Package')
-                                 ->options(
-                                    $packages->mapWithKeys(function (Package $package) {
-                                        return [$package->id => sprintf('%s (stock %s)', $package->name, $package->quantity)];
-                                    })
-                                    )
-                                 ->reactive()
-                                 ->afterStateUpdated(fn ($state, Forms\Set $set)=>
-                                      $set('unit_price', Package::find($state)?->price ?? 0))
-                                 ->searchable(),
-                            Forms\Components\TextInput::make('quantity')
-                                 ->label('Quantity')
-                                 ->default(1)
-                                 ->live()
-                                 ->dehydrated()
-                                 ->numeric(),
-                            Forms\Components\TextInput::make('unit_price')
-                                 ->label('Unit Price')
-                                 ->numeric()
-                                 ->readOnly()
-                                 ->dehydrated()
-                                 ->prefix('₱'),
-                            Forms\Components\Placeholder::make('total_price')
-                                 ->label('Total Price:')
-                                 ->content(function ($get) {
-                                     $quantity = (float)$get('quantity');
-                                     $unit_price = (float)$get('unit_price');
-     
-                                     if ($quantity !== null && $unit_price !== null) {
-                                         return $quantity * $unit_price;
-                                     }
-                                     return 0;
-                                 }),  
-                        ]),
-                    Wizard\Step::make('Duration')
-                        ->schema([
-
-                        Forms\Components\DateTimePicker::make('date_of_delivery')
-                            ->label('Scheduled for Rental')
-                            ->suffixIcon('heroicon-m-calendar-days')
-                            ->prefix('Start')
-                            ->required()
-                            ->seconds(false)
-                            ->minDate(now()->subHours(14))
-                            ->hint(str('To be delivered')->inlineMarkdown()->toHtmlString())
-                            ->hintIcon('heroicon-m-question-mark-circle'),
-                        Forms\Components\DateTimePicker::make('date_of_pickup')->after('date_of_delivery')
-                            ->label('End of Rental')
-                            ->suffixIcon('heroicon-m-calendar-days') 
-                            ->prefix('End')  
-                            ->required()
-                            ->seconds(false)
-                            ->minDate(now()),
-                        Forms\Components\TextInput::make('delivery_fee')
-                            ->label('Transportation Fee')
-                            ->numeric()
-                            ->readOnly(fn () => !auth()->user()->isAdmin())
-                            ->visible(true)
-                            ->hint(str('applied when 10km away from shop (only for delivery)')->inlineMarkdown()->toHtmlString())
-                            ->hintIcon('heroicon-m-question-mark-circle')
-                            ->default(00.00)
-                            ->prefix('₱')
-                            ->suffixIcon('heroicon-m-truck'),
-
-                        ]),
-                ])->columnSpanFull()
+                        Wizard\Step::make('Addiontal Fee')
+                            ->icon('heroicon-m-user')
+                            ->description('F')
+                            ->schema([
+                       
+                                Forms\Components\TextInput::make('rent_number')
+                                    ->label('Rent Number')
+                                    ->default('RN-'. random_int(100000, 999999))
+                                    ->disabled()
+                                    ->dehydrated()
+                                    ->required(),
+                                Forms\Components\Hidden::make('user_id')
+                                    ->default(auth()->check() ? auth()->user()->id : null)
+                                    ->required(),
+                                Forms\Components\TextInput::make('address')
+                                    ->label('Complete Address')
+                                    ->required()
+                                    ->maxLength(255)
+                                    ->default(auth()->check() ? auth()->user()->address : null),
+                                PhoneInput::make('contact')
+                                    ->required()
+                                    ->disallowDropdown()
+                                    ->defaultCountry('Philippines')
+                                    ->default(auth()->check() ? auth()->user()->contact : null),
+                                
+                                ])->columns(1)->visible(auth()->user()->isAdmin()),
+                ])->columnSpanFull(),
             ]);
 
     }
@@ -394,12 +419,16 @@ class RentPackageResource extends Resource
                 
             ])
             ->bulkActions([
-                    Tables\Actions\BulkActionGroup::make([
+                Tables\Actions\BulkActionGroup::make([
+                    BulkAction::make('delete')
+                        ->requiresConfirmation()
+                        ->action(fn (RentPackage $records) => $records->each->delete())
+                        ->visible(auth()->user() && !auth()->user()->isAdmin()),
             
                 ]),
             ])
             ->emptyStateActions([
-                Tables\Actions\CreateAction::make(),
+                //Tables\Actions\CreateAction::make(),
             ]);
     }
 
@@ -510,5 +539,17 @@ class RentPackageResource extends Resource
     }
 
     return null;
-    }  
+    } 
+    
+    public static function getnavigationGroup(): string
+    {
+        // Check if the user is an admin
+        if (Auth::check() && Auth::user()->isAdmin()) {
+            // Show the label for admins
+            return 'Renting Management';
+        }
+
+        // For regular users or other conditions, you can return a default label
+        return 'Rents';
+    }
 }

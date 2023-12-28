@@ -40,6 +40,8 @@ use Filament\Tables\Columns\Layout\Split as LayoutSplit;
 use Filament\Tables\Columns\Summarizers\Average;
 use Filament\Tables\Columns\TextColumn\TextColumnSize;
 use IbrahimBougaoua\FilamentRatingStar\Columns\RatingStarColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Illuminate\Support\Facades\Auth;
 
 class EquipmentResource extends Resource
 {
@@ -49,14 +51,14 @@ class EquipmentResource extends Resource
 
     protected static ?string $navigationLabel = 'Equipments';
 
-    protected static ?string $navigationGroup = 'Inventory Management';
+    protected static ?string $navigationGroup = 'Inventory';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
                 
-                        Forms\Components\Section::make('Equipment Details')
+                    Forms\Components\Section::make('Equipment Details')
                             ->schema([
 
                                 Forms\Components\TextInput::make('name')
@@ -92,8 +94,9 @@ class EquipmentResource extends Resource
                                     ->numeric(),
                                 Forms\Components\TextInput::make('days')
                                     ->label('Days')
-                                    ->required()
-                                    ->numeric(),
+                                    ->numeric()
+                                    ->default(1)
+                                    ->readOnly(),
                                 
                             ]),
                         ]),
@@ -107,7 +110,7 @@ class EquipmentResource extends Resource
                                     ->image()
                                     ->openable()
                                     ->preserveFilenames(),        
-
+                                
                             ])
                         ]),
                 ]);
@@ -128,7 +131,8 @@ class EquipmentResource extends Resource
                     ->size(165),
 
                 LayoutSplit::make([
-                    TextColumn::make('name')
+
+                TextColumn::make('name')
                     ->weight(FontWeight::Bold)
                     ->searchable()
                     ->sortable(),
@@ -141,17 +145,23 @@ class EquipmentResource extends Resource
                     }),
                 ]),
                 
+                LayoutSplit::make([
+
                 TextColumn::make('price')
                     ->numeric(
                         decimalPlaces: 2,
                         decimalSeparator: '.',
                         thousandsSeparator: ',',
                     )
-                    ->label('Rate Per day')
                     ->prefix('₱ ')
                     ->color('warning')
                     ->sortable(),
-                
+                TextColumn::make('days')
+                    ->suffix(' day')
+                    ->color('gray')
+                    ->size(TextColumnSize::ExtraSmall),
+                    ]),
+
                 LayoutSplit::make([
 
                 RatingStarColumn::make('rent_avg_rating')
@@ -181,7 +191,8 @@ class EquipmentResource extends Resource
             ]), 
     ])
             ->filters([
-                //
+                SelectFilter::make('type')
+                    ->relationship('type', 'name'),
             ])
             ->actions([
         
@@ -206,12 +217,15 @@ class EquipmentResource extends Resource
                 Section::make('Equipment Details')
                     ->schema([
                     Split::make([
-                        Grid::make(3)
+                        Grid::make(4)
                             ->schema([
                             Group::make([
                                 TextEntry::make('name')
                                     ->label('Equipment Name:')
-                                    ->weight(FontWeight::Bold),
+                                    ->weight(FontWeight::Bold)
+                                    ->copyable()
+                                    ->copyMessage('Copied!')
+                                    ->copyMessageDuration(1500),
                                 ImageEntry::make('image')
                                     ->label('')
                                     ->size(200),
@@ -220,15 +234,13 @@ class EquipmentResource extends Resource
                             Group::make([
                                 TextEntry::make('code')
                                     ->label('Code:')
-                                    ->badge()
-                                    ->color('info')
-                                    ->copyable()
-                                    ->copyMessage('Copied!')
-                                    ->copyMessageDuration(1500),
+                                    ->weight(FontWeight::Bold),
                                 TextEntry::make('type.name')
-                                    ->label('Type:'),
-                                TextEntry::make('description')
-                                    ->label('Description:'),
+                                    ->label('Type:')
+                                    ->weight(FontWeight::Bold),
+                                TextEntry::make('days')
+                                    ->label('Days:')
+                                    ->weight(FontWeight::Bold),
                                 
                             ]),
 
@@ -252,7 +264,14 @@ class EquipmentResource extends Resource
                                 TextEntry::make('quantity')
                                     ->label('Stocks:'),
                                 
-                            ])
+                                ]),
+
+                            Group::make([
+                                   
+                                    TextEntry::make('description')
+                                        ->label('Description:'),
+                                        
+                                ]),
                                 
                         ]),
                     ])
@@ -281,5 +300,17 @@ class EquipmentResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         return static::getModel()::count();
+    }
+
+    public static function getnavigationGroup(): string
+    {
+        // Check if the user is an admin
+        if (Auth::check() && Auth::user()->isAdmin()) {
+            // Show the label for admins
+            return 'Inventory Management';
+        }
+
+        // For regular users or other conditions, you can return a default label
+        return 'Equipment & Packages';
     }
 }
