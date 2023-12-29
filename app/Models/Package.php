@@ -12,7 +12,6 @@ class Package extends Model
     protected $fillable = [
         'name',
         'equipment_id',
-        'rentpackage_id',
         'code',
         'description',
         'image',
@@ -33,7 +32,12 @@ class Package extends Model
 
     public function rentpackage()
     {
-            return $this->hasMany(RentPackage::class);
+        return $this->hasMany(RentPackage::class);
+    }
+
+    public function averageRating()
+    {
+    return $this->rent->avg('rating');
     }
     
     protected static function boot()
@@ -67,4 +71,5 @@ class Package extends Model
         // Set the total attribute
         $this->setAttribute('total', $total);
     }
+    
 }

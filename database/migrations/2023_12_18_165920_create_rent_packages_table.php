@@ -14,23 +14,24 @@ return new class extends Migration
         Schema::create('rent_packages', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('package_id')->nullable()->constrained()->cascadeOnDelete();
+            $table->foreignId('package_id')->constrained()->cascadeOnDelete();
             $table->string('rent_number')->unique();
-            $table->integer('quantity');
+            $table->integer('quantity')->default(1);
             $table->decimal('unit_price', 10 ,2)->nullable();
             $table->decimal('total_price', 10 ,2)->nullable();
             $table->decimal('delivery_fee', 10 ,2);
             $table->string('address');
             $table->string('contact');
             $table->string('type');
-            $table->dateTime('date_of_pickup');
-            $table->dateTime('date_of_delivery')->nullable();
-            $table->string('status')->default('pending');
-            $table->softDeletes();
-            $table->timestamps();
+            $table->dateTime('return');
+            $table->dateTime('delivery');
+            $table->string('status')->default('checkout');
             $table->integer('rating')->nullable();
             $table->string('comment')->nullable();
             $table->string('image')->nullable();
+            $table->softDeletes();
+            $table->timestamps();
+            
         });
     }
 

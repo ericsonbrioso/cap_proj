@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Equipment extends Model
 {
@@ -13,7 +12,6 @@ class Equipment extends Model
     protected $fillable = [
         'name',
         'type_id',
-        'rent_id',
         'code',
         'description',
         'image',
@@ -29,9 +27,9 @@ class Equipment extends Model
     }
     
     public function rent()
-        {
+    {
             return $this->hasMany(Rent::class);
-        }
+    }
 
     public function averageRating()
     {

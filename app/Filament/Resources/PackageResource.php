@@ -93,7 +93,7 @@ class PackageResource extends Resource
                                 ->label('Equipment')
                                 ->options(
                                     $equipments->mapWithKeys(function (Equipment $equipment) {
-                                        return [$equipment->id => sprintf('%s (stock %s)', $equipment->name, $equipment->quantity)];
+                                        return [$equipment->id => sprintf($equipment->name)];
                                     })
                                     )
                                 

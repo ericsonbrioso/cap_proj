@@ -18,15 +18,15 @@ class CalendarWidget extends FullCalendarWidget
         if ($user->isAdmin()) {
             // Admin can see all rents
             $events = Rent::query()
-                ->where('date_of_delivery', '>=', $fetchInfo['start'])
-                ->where('date_of_pickup', '<=', $fetchInfo['end'])
+                ->where('delivery', '>=', $fetchInfo['start'])
+                ->where('return', '<=', $fetchInfo['end'])
                 ->get();
         } else {
             // Regular user can see only their rents
             $events = Rent::query()
                 ->where('user_id', $user->id)
-                ->where('date_of_delivery', '>=', $fetchInfo['start'])
-                ->where('date_of_pickup', '<=', $fetchInfo['end'])
+                ->where('delivery', '>=', $fetchInfo['start'])
+                ->where('return', '<=', $fetchInfo['end'])
                 ->get();
         }
 
@@ -36,8 +36,8 @@ class CalendarWidget extends FullCalendarWidget
                 
                 return [
                     'title' => $event->rent_number,
-                    'start' => $event->date_of_delivery,
-                    'end' => $event->date_of_pickup,
+                    'start' => $event->delivery,
+                    'end' => $event->return,
                     'url' => RentResource::getUrl(name: 'view', parameters: ['record' => $event]),
                     'shouldOpenUrlInNewTab' => true,
                     'color' => $color,

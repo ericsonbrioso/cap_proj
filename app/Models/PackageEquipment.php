@@ -22,7 +22,7 @@ class PackageEquipment extends Model
         return $this->belongsTo(Package::class);
     }  
 
-    protected static function boot()
+    /*protected static function boot()
     {
         parent::boot();
 
@@ -41,5 +41,5 @@ class PackageEquipment extends Model
                 $equipment->increment('quantity', $packageEquipment->quantity);
             }
         });
-    }
+    }*/
 }

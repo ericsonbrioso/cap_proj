@@ -21,6 +21,8 @@ use Filament\Forms\Components\Select;
 use App\Models\Equipment;
 use App\Models\User;
 use Filament\Forms\Components\Actions;
+use Filament\Forms\Components\Group as ComponentsGroup;
+use Filament\Forms\Components\Section as ComponentsSection;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\FormsComponent;
 use Filament\Resources\Forms\Components;
@@ -47,6 +49,7 @@ use IbrahimBougaoua\FilamentRatingStar\Actions\RatingStar;
 use IbrahimBougaoua\FilamentRatingStar\Columns\RatingStarColumn;
 use Illuminate\Support\Facades\Auth;
 use Filament\Tables\Actions\BulkAction;
+use Filament\Tables\Filters\SelectFilter;
 
 class RentResource extends Resource
 {
@@ -113,17 +116,16 @@ class RentResource extends Resource
                 
                     Wizard\Step::make('Duration')
                         ->icon('heroicon-m-calendar-days')
-                        ->description('Select pickup/delivery & return date')
+                        ->description('Select starting & ending date')
                         ->schema([
 
-                        Forms\Components\DateTimePicker::make('date_of_delivery')
-                            ->label('Pickup/Delivery')
+                        Forms\Components\DateTimePicker::make('delivery')
+                            ->label('')
                             ->prefix('Start')
-                            ->required()
                             ->seconds(false)
                             ->minDate(now()->subHours(14)),
-                        Forms\Components\DateTimePicker::make('date_of_pickup')->after('date_of_delivery')
-                            ->label('Return')
+                        Forms\Components\DateTimePicker::make('return')->after('delivery')
+                            ->label('')
                             ->prefix('End')  
                             ->required()
                             ->seconds(false)
@@ -164,33 +166,20 @@ class RentResource extends Resource
                             
                             ])->columns(1),
 
-                        Wizard\Step::make('Addiontal Fee')
-                            ->icon('heroicon-m-user')
-                            ->description('F')
-                            ->schema([
-                       
-                                Forms\Components\TextInput::make('rent_number')
-                                    ->label('Rent Number')
-                                    ->default('RN-'. random_int(100000, 999999))
-                                    ->disabled()
-                                    ->dehydrated()
-                                    ->required(),
-                                Forms\Components\Hidden::make('user_id')
-                                    ->default(auth()->check() ? auth()->user()->id : null)
-                                    ->required(),
-                                Forms\Components\TextInput::make('address')
-                                    ->label('Complete Address')
-                                    ->required()
-                                    ->maxLength(255)
-                                    ->default(auth()->check() ? auth()->user()->address : null),
-                                PhoneInput::make('contact')
-                                    ->required()
-                                    ->disallowDropdown()
-                                    ->defaultCountry('Philippines')
-                                    ->default(auth()->check() ? auth()->user()->contact : null),
-                                
-                                ])->columns(1)->visible(auth()->user()->isAdmin()),
                 ])->columnSpanFull(),
+
+                        ComponentsGroup::make()
+                            ->schema([
+                                ComponentsSection::make('Additional Fee')
+                                    ->schema([
+                                    Forms\Components\TextInput::make('delivery_fee')
+                                        ->label('Delivery Fee')
+                                        ->numeric()
+                                        ->prefix('₱'),
+                                ])      
+                        ])
+                        ->columns(1)
+                        ->visible(auth()->user()->isAdmin()),
             ]);
 
     }
@@ -237,15 +226,15 @@ class RentResource extends Resource
                     'approved' => 'success',
                     'rejected' => 'info',
                     'for-delivery' => 'success',
-                    'for-pickup' => 'success',
+                    'for-return' => 'success',
                     'completed' => 'success',
                     'cancelled' => 'danger',
                     }),
-            Tables\Columns\TextColumn::make('date_of_delivery') 
-                ->label('Pickup/Deliver')
+            Tables\Columns\TextColumn::make('delivery') 
+                ->label('Start of Rental')
                 ->searchable(),
-            Tables\Columns\TextColumn::make('date_of_pickup')
-                ->label('Return')
+            Tables\Columns\TextColumn::make('return')
+                ->label('End of Rental')
                 ->searchable(),
             Tables\Columns\TextColumn::make('created_at')
                 ->dateTime()
@@ -257,9 +246,15 @@ class RentResource extends Resource
                 ->toggleable(isToggledHiddenByDefault: true),
         ]) 
             ->filters([
-                //
+                SelectFilter::make('user_id')
+                    ->label('Users')
+                    ->relationship('user', 'name')
+                    ->visible(auth()->user()->isAdmin()),
             ])
             ->actions([
+                EditAction::make()
+                    ->label('')
+                    ->visible(fn ($record) => $record->status === 'pending' && auth()->user()->isAdmin()),
                 ViewAction::make()
                     ->label(''),
                 Tables\Actions\DeleteAction::make()
@@ -280,6 +275,7 @@ class RentResource extends Resource
 
                             Notification::make()
                                 ->title('Done confirmation')
+                                ->body('Waiting for approval')
                                 ->duration(3000)
                                 ->success()
                                 ->send();
@@ -316,7 +312,7 @@ class RentResource extends Resource
                                     ->label('Status')
                                     ->options([
                                         'for-delivery' => 'For-delivery',
-                                        'for-pickup' => 'For-pickup',
+                                        'for-return' => 'For-return',
                                     ])
                                 ])
                                     ->action(function (Rent $rent, array $data): void {
@@ -331,16 +327,16 @@ class RentResource extends Resource
                                     })
                                     ->visible(fn ($record) => $record->status === 'approved' && auth()->user()->isAdmin()),
                             
-                            Action::make('For Pickup')
+                            Action::make('For Return')
                                     ->icon('heroicon-m-truck')
                                     ->color('warning')
                                     ->action(function (Rent $rent, array $data): void {
-                                            $rent->status = 'for-pickup';
+                                            $rent->status = 'for-return';
                                             $rent->save();
                                             $rent->save();
         
                                             Notification::make()
-                                                ->title('Out for pickup')
+                                                ->title('Status Updated')
                                                 ->duration(3000)
                                                 ->success()
                                                 ->send();
@@ -415,11 +411,13 @@ class RentResource extends Resource
                                             ->schema([
 
                                                 Forms\Components\Fileupload::make('image')
+                                                    ->image()
                                                     ->label('Upload Photos:')
                                                     ->multiple()
                                                     ->preserveFilenames(),
                                             ])
                                 ])
+                                ->slideOver()
                                 ->visible(fn ($record) => $record->status === 'completed' && auth()->user() && !auth()->user()->isAdmin())
                                 ->action(function (Rent $rent, array $data): void {
                                
@@ -436,8 +434,8 @@ class RentResource extends Resource
                                         ->send();
                                 }),
                             
-                            Action::make('Edit')
-                                ->icon('heroicon-m-pencil')
+                            Action::make('Edit review')
+                                ->icon('heroicon-m-pencil-square')
                                 ->color('primary')
                                 ->form([
 
@@ -457,6 +455,7 @@ class RentResource extends Resource
                                         ->hintIcon('heroicon-m-question-mark-circle'),
                                     ]),
                                 ])
+                                ->slideOver()
                                 ->visible(fn ($record) => $record->status === 'completed' && auth()->user() && !auth()->user()->isAdmin())
                                 
                                 
@@ -493,14 +492,14 @@ class RentResource extends Resource
                         TextEntry::make('contact')
                             ->label('Contact Number:')
                             ->icon('heroicon-m-phone'),
-                        TextEntry::make('date_of_delivery')
-                            ->label('Start of rental: (sheduled for delivery)')
+                        TextEntry::make('delivery')
+                            ->label('Start of rental:')
                             ->icon('heroicon-m-truck'),
                         TextEntry::make('address')
                             ->label('Address:')
                             ->icon('heroicon-m-map-pin'),
-                        TextEntry::make('date_of_pickup')
-                            ->label('End of rental: (retrieval of equipments)')
+                        TextEntry::make('return')
+                            ->label('End of rental:')
                             ->icon('heroicon-m-truck'),
                     ]),
                 ]),
@@ -512,7 +511,7 @@ class RentResource extends Resource
                  Section::make('Equipment Details')
                     ->schema([
                     Split::make([
-                        Grid::make(3)
+                        Grid::make(2)
                             ->schema([
                         Group::make([
                             
@@ -536,19 +535,32 @@ class RentResource extends Resource
                                 ->badge()
                                 ->color('warning'),
                         ]),
+                    ]),
+                ])
+                    
+            ]),
+            ]),
 
+            Group::make()
+            ->schema([
+
+                 Section::make('Other Fees:')
+                    ->schema([
+                    Split::make([
+                        Grid::make(3)
+                            ->schema([
                         Group::make([
                             TextEntry::make('type')
                                 ->label('Type:'),
                             TextEntry::make('delivery_fee')
                                 ->label('Transportation Fee:')
                                 ->prefix('₱ '),
-                        ])
-                    ]),
-                                ])
-                    
+                            ])
                         ]),
-            ])->columnSpanFull(),
+                    ])
+                    
+                ]),
+            ]),
 
         ]);
 }

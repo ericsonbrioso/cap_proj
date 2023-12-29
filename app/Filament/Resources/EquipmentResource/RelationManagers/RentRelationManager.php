@@ -35,72 +35,10 @@ class RentRelationManager extends RelationManager
 
     public function form(Form $form): Form
     {
-        $equipments = Equipment::get();
+
         return $form
             ->schema([
-                Wizard::make([
-                    
-                    Wizard\Step::make('Rent')
-                        ->description('Select Type and Quantity')
-                        ->schema([
-
-                        Forms\Components\Select::make('type')
-                            ->label('Choose Type')
-                            ->options([
-                                'pickup' => 'Pickup',
-                                'delivery' => 'Delivery',
-                            ])
-                            ->required(),
-                        Forms\Components\TextInput::make('quantity')
-                            ->label('Quantity')
-                            ->default(1)
-                            ->numeric(),
-                        ])->columns(2),
-
-                    Wizard\Step::make('Duration')
-                        ->description('Select Date for pickup/delivery and return')
-                        ->schema([
-
-                        Forms\Components\DateTimePicker::make('date_of_delivery')
-                            ->label('Pickup/Delivery')
-                            ->prefix('Start')
-                            ->required()
-                            ->seconds(false)
-                            ->minDate(now()->subHours(14)),
-                        Forms\Components\DateTimePicker::make('date_of_pickup')->after('date_of_delivery')
-                            ->label('Return')
-                            ->prefix('End')  
-                            ->required()
-                            ->seconds(false)
-                            ->minDate(now()),
-                        ])->columns(2),
-
-                    Wizard\Step::make('Other Information')
-                        ->description('Client Details')
-                        ->schema([
-                   
-                            Forms\Components\TextInput::make('rent_number')
-                                ->label('Rent Number')
-                                ->default('RN-'. random_int(100000, 999999))
-                                ->disabled()
-                                ->dehydrated()
-                                ->required(),
-                            Forms\Components\Hidden::make('user_id')
-                                ->default(auth()->check() ? auth()->user()->id : null)
-                                ->required(),
-                            Forms\Components\TextInput::make('address')
-                                ->label('Complete Address')
-                                ->required()
-                                ->maxLength(255)
-                                ->default(auth()->check() ? auth()->user()->address : null),
-                            PhoneInput::make('contact')
-                                ->required()
-                                ->disallowDropdown()
-                                ->defaultCountry('Philippines')
-                                ->default(auth()->check() ? auth()->user()->contact : null),
-                            
-                            ])->columns(1),
-                ])->columnSpanFull(),
+               //
             ]);
     }
 

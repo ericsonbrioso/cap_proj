@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('rents', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('equipment_id')->nullable()->constrained()->cascadeOnDelete();
+            $table->foreignId('equipment_id')->constrained()->cascadeOnDelete();
             $table->string('rent_number')->unique();
             $table->integer('quantity')->default(1);
             $table->decimal('unit_price', 10 ,2)->nullable();
@@ -23,14 +23,14 @@ return new class extends Migration
             $table->string('address');
             $table->string('contact');
             $table->string('type');
-            $table->dateTime('date_of_pickup');
-            $table->dateTime('date_of_delivery')->nullable();
+            $table->dateTime('return');
+            $table->dateTime('delivery');
             $table->string('status')->default('checkout');
-            $table->softDeletes();
-            $table->timestamps();
             $table->integer('rating')->nullable();
             $table->string('comment')->nullable();
             $table->string('image')->nullable();
+            $table->softDeletes();
+            $table->timestamps();
         });
     }
 

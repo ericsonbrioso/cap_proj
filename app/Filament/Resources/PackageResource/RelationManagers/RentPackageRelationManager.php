@@ -14,7 +14,6 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use IbrahimBougaoua\FilamentRatingStar\Columns\RatingStarColumn;
 use Filament\Tables\Columns\Summarizers\Average;
 use Filament\Support\Enums\Alignment;
-
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Support\Enums\IconPosition;
@@ -97,19 +96,24 @@ class RentPackageRelationManager extends RelationManager
                         ]),
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make(),
+               // Tables\Actions\CreateAction::make(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+              //  Tables\Actions\EditAction::make(),
+               // Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                   // Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ])
             ->emptyStateActions([
-                Tables\Actions\CreateAction::make(),
+               // Tables\Actions\CreateAction::make(),
             ]);
+    }
+
+    public function isReadOnly(): bool
+    {
+    return false;
     }
 }

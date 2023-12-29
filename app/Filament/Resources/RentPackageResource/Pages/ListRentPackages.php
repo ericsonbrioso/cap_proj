@@ -30,10 +30,10 @@ class ListRentPackages extends ListRecords
         $tabs = [];
 
         if ($isAdmin) {
-            $tabs['all'] = ListRecordsTab::make('All rents')->badge(RentPackage::count());
+           // $tabs['all'] = ListRecordsTab::make('All rents')->badge(RentPackage::count());
 
             
-            $statuses = ['pending', 'approved', 'rejected', 'for-delivery', 'for-pickup', 'completed', 'cancelled'];
+            $statuses = ['pending', 'approved', 'rejected', 'for-delivery', 'for-return', 'completed', 'cancelled'];
 
             foreach ($statuses as $status) {
                 $statusCount = RentPackage::where('status', $status)->count();
@@ -48,7 +48,7 @@ class ListRentPackages extends ListRecords
                //Rent::where('user_id', $user->id)->count()
            // );
 
-            $statuses = ['pending', 'approved', 'rejected', 'for-delivery', 'for-pickup', 'completed', 'cancelled'];
+            $statuses = ['checkout', 'pending', 'approved', 'rejected', 'for-delivery', 'for-return', 'completed', 'cancelled'];
 
             foreach ($statuses as $status) {
                 $statusCount = RentPackage::where('user_id', $user->id)
