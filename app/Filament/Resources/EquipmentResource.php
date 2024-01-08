@@ -194,6 +194,12 @@ class EquipmentResource extends Resource
                 SelectFilter::make('type')
                     ->relationship('type', 'name'),
             ])
+            ->headerActions([
+                Action::make('create')
+                ->label('Createa Rent')
+                ->link('https://rentasor.tlccs.site/admin/rents'),
+                
+            ])
             ->actions([
         
                     ViewAction::make(),

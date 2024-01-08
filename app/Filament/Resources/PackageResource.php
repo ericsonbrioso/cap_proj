@@ -137,6 +137,15 @@ class PackageResource extends Resource
                         ->afterStateHydrated(function (Get $get, Set $set) {
                             self::updateTotals($get, $set);
                         }),
+                    Forms\Components\TextInput::make('add-ons')
+                        ->suffix('+')
+                        ->numeric()
+                        // Live field, as we need to re-calculate the total on each change
+                        ->live(true)
+                        // This enables us to display the subtotal on the edit page load
+                        ->afterStateUpdated(function (Get $get, Set $set) {
+                            self::updateTotals($get, $set);
+                        }),
                     Forms\Components\TextInput::make('total')
                         ->numeric()
                         // Read-only, because it's calculated
@@ -162,8 +171,18 @@ class PackageResource extends Resource
  
     // Update the state with the new values
     $set('subtotal', number_format($subtotal, 2, '.', ''));
-    $set('total', number_format($subtotal, 2, '.', '')); // Total does not include taxes
-}
+    $add_ons = $get('add-ons');
+
+    // Check if add-ons is not empty and is_numeric before converting it to float
+    if (!empty($add_ons) && is_numeric($add_ons)) {
+        $add_ons = floatval($add_ons);
+    } else {
+     $add_ons = 0; // Set a default value if add-ons is not numeric or empty
+    }
+
+    $set('total', number_format($subtotal + $add_ons, 2, '.', ''));
+
+    }
 
     public static function table(Table $table): Table
     {

@@ -50,6 +50,7 @@ use IbrahimBougaoua\FilamentRatingStar\Actions\RatingStar;
 use IbrahimBougaoua\FilamentRatingStar\Columns\RatingStarColumn;
 use Illuminate\Support\Facades\Auth;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Forms\Components\FileUpload;
 
 class RentPackageResource extends Resource
 {
@@ -454,7 +455,7 @@ class RentPackageResource extends Resource
                                     Forms\Components\Group::make()
                                             ->schema([
 
-                                                Forms\Components\Fileupload::make('image')
+                                                Forms\Components\FileUpload::make('image')
                                                     ->image()
                                                     ->label('Upload Photos:')
                                                     ->multiple()

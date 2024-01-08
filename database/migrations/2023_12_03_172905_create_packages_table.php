@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('image')->nullable();
             $table->string('status');
             $table->decimal('total', 10 ,2)->nullable();
+            $table->decimal('add-ons', 10 ,2)->nullable();
             $table->timestamps();
         });
     }

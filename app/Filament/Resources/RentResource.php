@@ -50,6 +50,8 @@ use IbrahimBougaoua\FilamentRatingStar\Columns\RatingStarColumn;
 use Illuminate\Support\Facades\Auth;
 use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Filters\SelectFilter;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Blade;
 
 class RentResource extends Resource
 {
@@ -357,7 +359,7 @@ class RentResource extends Resource
                                                 ->success()
                                                 ->send();
                                         })
-                                        ->visible(fn ($record) => $record->status === 'for-pickup' && auth()->user()->isAdmin()),
+                                        ->visible(fn ($record) => $record->status === 'for-return' && auth()->user()->isAdmin()),
 
                             Action::make('Cancel Rent')
                                 ->icon('heroicon-m-x-circle')
@@ -456,9 +458,28 @@ class RentResource extends Resource
                                     ]),
                                 ])
                                 ->slideOver()
-                                ->visible(fn ($record) => $record->status === 'completed' && auth()->user() && !auth()->user()->isAdmin())
-                                
-                                
+                                ->visible(fn ($record) => $record->status === 'completed' && auth()->user() && !auth()->user()->isAdmin()),
+
+                            Action::make('pdf') 
+                                ->label('Download PDF')
+                                ->color('success')
+                                ->icon('heroicon-m-document-arrow-down')
+                                ->action(function (Rent $record) {
+                                    $pdf = PDF::loadView('pdf', ['record' => $record]);
+                            
+                                    return response()->stream(
+                                        function () use ($pdf) {
+                                            echo $pdf->output();
+                                        },
+                                        200,
+                                        [
+                                            'Content-Type'        => 'application/pdf',
+                                            'Content-Disposition' => 'inline; filename="' . $record->number . '.pdf"',
+                                        ]
+                                    );
+                                })->visible(fn ($record) => $record->status === 'approved' && auth()->user() && auth()->user()->isAdmin()),
+
+                           
                 ])
                 
             ])

@@ -62,14 +62,26 @@ class Rent extends Model
             }
         }
     });
+
+    static::deleting(function ($rent) {
+        $quantity = (float) $rent->quantity;
+
+        // Add the rented quantity back to the equipment's inventory
+        if ($equipment = $rent->equipment) {
+            $currentInventory = (float) $equipment->quantity;
+            $equipment->quantity = $currentInventory + $quantity;
+            $equipment->save();
+        }
+    });
     
     static::updating(function ($rent) {
         $statusChangedToCancelled = $rent->isDirty('status') && $rent->status === 'cancelled';
         $statusChangedToCompleted = $rent->isDirty('status') && $rent->status === 'completed';
-
-        if ($statusChangedToCancelled || $statusChangedToCompleted) {
+        $statusChangedToRejected = $rent->isDirty('status') && $rent->status === 'rejected';
+    
+        if ($statusChangedToCancelled || $statusChangedToCompleted || $statusChangedToRejected) {
             $quantity = (float) $rent->quantity;
-
+    
             // Add the rented quantity back to the equipment's inventory
             if ($equipment = $rent->equipment) {
                 $currentInventory = (float) $equipment->quantity;

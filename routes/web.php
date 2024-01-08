@@ -13,7 +13,6 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/login', function () {
+Route::get('/', function () {
     return redirect(route('filament.admin.auth.login'));
-})->name('login');
-
+});
